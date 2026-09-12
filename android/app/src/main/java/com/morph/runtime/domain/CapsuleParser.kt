@@ -54,7 +54,7 @@ object CapsuleParser {
     private fun JSONObject.positiveInt(name: String): Int = getInt(name).also { require(it > 0) }
     private fun PhaseType.title() = when (this) {
         PhaseType.UNDERSTAND -> "Compreender"
-        PhaseType.MEASURE -> "Experimentar"
+        PhaseType.MEASURE -> "Medir"
         PhaseType.ANALYSE -> "Analisar"
         PhaseType.REFLECT -> "Reflectir"
     }

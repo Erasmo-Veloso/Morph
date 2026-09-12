@@ -44,6 +44,19 @@ Updated: 2026-09-12
 - The Erasmo Next.js dashboard now publishes the confirmed Capsule, relays
   start/next/end commands to the Android runtime, and displays polled Android
   connectivity, current phase and the latest Sentinel event.
+- The MVP visual contract is documented in `docs/mvp-visual-spec.md`; Android
+  now uses the supplied Morph mark, a white editorial runtime, a connected
+  phase rail, consistent phase labels and non-punitive Shield messaging
+  without changing the teacher dashboard base.
+- The Creative Production model is preserved at
+  `docs/morph-white-editorial.png`; the runtime implements its visual language
+  with native Compose components and keeps the logo gradient limited to brand
+  identity.
+- The Android runtime keeps the `MEASURE` card and live chart accessible in
+  landscape through vertical scrolling; the chart visibly changed from the
+  emulator's `8.77` to `3.74 m/s²` after a SensorManager input change.
+- `web` typecheck and `web` production build pass; Next.js is configured to use
+  the stable TypeScript API path and an explicit Turbopack workspace root.
 - With `MORPH_EMULATOR_DEMO=1`, the installed Chrome package is added to the
   `UNDERSTAND` policy even after a Capsule is published by the dashboard.
   AccessibilityService detected Chrome, kept `MORPH SHIELD` visible, and Room
