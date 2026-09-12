@@ -25,6 +25,8 @@ Updated: 2026-09-12
 - `npm run validate` includes an isolated realtime smoke test covering Capsule
   assignment, `UNDERSTAND`, `MEASURE`, idempotent duplicate Sentinel ACK and
   `FINISHED`.
+- `npm run validate` also restarts an isolated teacher server and verifies that
+  an active `MEASURE` session is restored from persisted state.
 - Teacher control server and browser controls are implemented with a WebSocket
   protocol: assignment, start, next, end and Sentinel acknowledgement.
 - Server-side duplicate Sentinel deliveries are ACKed idempotently; a local
