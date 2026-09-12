@@ -57,6 +57,8 @@ Updated: 2026-09-12
 
 ## PARTIAL
 
+- `WAITING_FOR_DEVICE`: ADB reports only the API 36 emulator; no authorized
+  physical Android handset is connected for the movement test.
 - A physical handset and physical movement are not proven in this environment.
   The sensor graph proof uses the API 36 emulator's virtual SensorManager input
   (`adb emu sensor`), not a claim of human movement.
