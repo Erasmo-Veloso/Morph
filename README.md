@@ -16,6 +16,10 @@ npm start
 
 Open `http://localhost:8787` for the teacher controls.
 
+The local control server persists its current teacher phase in the ignored
+`.morph-session-state.json` file so a realtime reconnect does not reset the
+active Capsule.
+
 ## Android
 
 ```bash

@@ -43,8 +43,9 @@ Updated: 2026-09-12
   sensor input changed the visible magnitude from `9.81` to `7.07` and then
   `12.00 m/s²`.
 - Stopping the server left the active phase running while Room retained
-  unsynced `CONNECTIVITY_CHANGED` rows. After restart, all pending rows were
-  ACKed and the server logged each event id once.
+  unsynced `CONNECTIVITY_CHANGED` rows. The server persists its teacher session
+  state; after restart the active `MEASURE` phase was restored as `LOCAL`, all
+  pending rows were ACKed, and the server logged each event id once.
 - Teacher `end` produced visible `FINISHED`, `Sessão terminada · policy limpa`,
   no active Morph sensor registration, and no deletion of Sentinel rows.
 

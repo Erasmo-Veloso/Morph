@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
@@ -7,6 +7,7 @@ import { WebSocketServer } from "ws";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const port = Number(process.env.PORT ?? 8787);
 const capsule = JSON.parse(await readFile(join(root, process.env.MORPH_CAPSULE_FILE ?? "fixtures/physics-capsule.json"), "utf8"));
+const stateFile = process.env.MORPH_STATE_FILE ?? join(root, ".morph-session-state.json");
 if (process.env.MORPH_EMULATOR_DEMO === "1") {
   for (const phase of capsule.phases) {
     if (!phase.restrictions.packages.includes("com.android.chrome")) phase.restrictions.packages.push("com.android.chrome");
@@ -15,8 +16,16 @@ if (process.env.MORPH_EMULATOR_DEMO === "1") {
 const clients = new Set();
 const deviceStatuses = new Map();
 const acknowledgedEventIds = new Set();
-let phaseIndex = 0;
-let running = false;
+const persistedState = await readFile(stateFile, "utf8")
+  .then((raw) => JSON.parse(raw))
+  .catch(() => ({}));
+let phaseIndex = Number.isInteger(persistedState.phaseIndex) ? persistedState.phaseIndex : 0;
+let running = persistedState.capsuleId === capsule.id && persistedState.running === true;
+
+function persistSessionState() {
+  return writeFile(stateFile, JSON.stringify({ capsuleId: capsule.id, phaseIndex, running }) + "\n")
+    .catch((error) => console.error(`Could not persist session state: ${error.message}`));
+}
 
 function broadcast(message) {
   const payload = JSON.stringify(message);
@@ -70,17 +79,20 @@ websocket.on("connection", (socket) => {
     if (message.type === "teacher:start") {
       phaseIndex = 0;
       running = true;
+      void persistSessionState();
       broadcast({ type: "session:started", capsuleId: capsule.id, phase: currentPhase() });
       return;
     }
     if (message.type === "teacher:next" && running) {
       if (phaseIndex >= capsule.phases.length - 1) return;
       phaseIndex += 1;
+      void persistSessionState();
       broadcast({ type: "phase:changed", capsuleId: capsule.id, phase: currentPhase() });
       return;
     }
     if (message.type === "teacher:end" && running) {
       running = false;
+      void persistSessionState();
       broadcast({ type: "session:ended", capsuleId: capsule.id });
       return;
     }
