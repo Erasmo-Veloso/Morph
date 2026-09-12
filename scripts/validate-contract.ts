@@ -10,6 +10,7 @@ assert.deepEqual(capsule.phases.map(({ type }) => type), ["UNDERSTAND", "MEASURE
 assert.ok(capsule.phases.find(({ type }) => type === "MEASURE")?.capabilities.includes("ACCELEROMETER"));
 assert.throws(() => parseLessonCapsule({ ...capsule, version: 99 }), /Unsupported capsule version/);
 assert.throws(() => parseLessonCapsule({ ...capsule, phases: [{ ...capsule.phases[0], type: "BROKEN" }] }), /invalid type/);
+assert.throws(() => parseLessonCapsule({ ...capsule, phases: [capsule.phases[0], capsule.phases[0]] }), /Phase types must be unique/);
 assert.deepEqual(planIntent("explicação, experiência prática, analisar dados e reflexão"), ["UNDERSTAND", "MEASURE", "ANALYSE", "REFLECT"]);
 assert.deepEqual(planIntent("texto sem intenção reconhecível"), ["UNDERSTAND"]);
 console.log("TypeScript contract parser: PASS");

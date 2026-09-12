@@ -24,7 +24,7 @@ assert.deepEqual(result.phases.map(({ type }) => type), ["UNDERSTAND", "MEASURE"
 assert.ok(result.phases.find(({ type }) => type === "MEASURE").capabilities.includes("ACCELEROMETER"));
 assert.throws(() => parseLessonCapsule({ ...capsule, version: 99 }), /unsupported capsule version/);
 assert.throws(() => parseLessonCapsule({ ...capsule, phases: [{ ...capsule.phases[0], type: "BROKEN" }] }), /invalid phase/);
+assert.throws(() => parseLessonCapsule({ ...capsule, phases: [capsule.phases[0], capsule.phases[0]] }), /phase types must be unique/);
 console.log("Capsule validation: PASS");
 console.log(`Fixture: ${result.id}`);
 console.log(`Flow: ${result.phases.map(({ type }) => type).join(" -> ")}`);
-
