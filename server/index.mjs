@@ -39,6 +39,11 @@ function stateMessage() {
 }
 
 const server = createServer(async (request, response) => {
+  if (request.url?.split("?", 1)[0] === "/health") {
+    response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+    response.end(JSON.stringify({ status: "ok", acknowledgedEventCount: acknowledgedEventIds.size, connectedClients: clients.size }));
+    return;
+  }
   const requested = request.url === "/" ? "/index.html" : request.url;
   const safePath = normalize(requested).replace(/^\.\.(\/|\\|$)/, "");
   const filePath = join(root, "public", safePath);

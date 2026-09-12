@@ -22,6 +22,9 @@ Updated: 2026-09-12
   connectivity mapping.
 - Deterministic planner fallback maps Portuguese pedagogical intent to phases;
   it is covered by `npm run validate`.
+- `npm run validate` includes an isolated realtime smoke test covering Capsule
+  assignment, `UNDERSTAND`, `MEASURE`, idempotent duplicate Sentinel ACK and
+  `FINISHED`.
 - Teacher control server and browser controls are implemented with a WebSocket
   protocol: assignment, start, next, end and Sentinel acknowledgement.
 - Server-side duplicate Sentinel deliveries are ACKed idempotently; a local

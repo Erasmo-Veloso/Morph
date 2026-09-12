@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "tsx scripts/validate-contract.ts && node scripts/validate.mjs",
+    "validate": "tsx scripts/validate-contract.ts && node scripts/validate.mjs && node scripts/validate-realtime.mjs",
     "start": "node server/index.mjs"
   },
   "dependencies": {
