@@ -6,8 +6,9 @@
 2. Build/install the Android app with `scripts/android-build.sh` and
    `scripts/android-install.sh`, or use Android Studio with an emulator/device.
 3. For a physical device, build with the laptop's LAN address without editing
-   source: `MORPH_SERVER_URL=ws://192.168.x.x:8787/realtime
-   scripts/android-build.sh`. The default `10.0.2.2` targets an emulator.
+   source: `MORPH_SERVER_URL=ws://192.168.x.x:8787/realtime scripts/android-build.sh`.
+   Keep the phone and laptop on the same network and allow port 8787 through
+   the local firewall. The default `10.0.2.2` targets an emulator.
 4. On the Android device, enable Morph under Accessibility. This is an
    explicit OS permission required for package-level enforcement.
 

@@ -73,6 +73,17 @@ try {
   const changed = await nextMessage((message) => message.type === "phase:changed");
   if (changed.phase.type !== "MEASURE") throw new Error("Expected MEASURE transition");
 
+  socket.send(JSON.stringify({
+    type: "device:status",
+    studentId: "validate-student",
+    phase: "MEASURE",
+    connectivity: "LOCAL",
+    integrity: "UNVERIFIED",
+    lastSeen: Date.now()
+  }));
+  const deviceStatus = await nextMessage((message) => message.type === "device:status");
+  if (deviceStatus.status.classId !== "10A-FISICA") throw new Error("Expected classId in device status");
+
   const eventId = randomUUID();
   const event = { id: eventId, studentId: "validate-student", capsuleId: changed.capsuleId, phaseId: changed.phase.id, type: "CONNECTIVITY_CHANGED", occurredAt: Date.now(), payload: "state=LOCAL" };
   const eventMessage = JSON.stringify({ type: "sentinel:event", event });
