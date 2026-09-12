@@ -1,0 +1,64 @@
+{
+  "id": "physics-accelerated-motion-v1",
+  "version": 1,
+  "lesson": {
+    "subject": "Física",
+    "topic": "Movimento acelerado",
+    "classId": "10A-FISICA",
+    "teacherId": "teacher-demo",
+    "durationMinutes": 30
+  },
+  "phases": [
+    {
+      "id": "understand",
+      "type": "UNDERSTAND",
+      "title": "Compreender",
+      "durationMinutes": 5,
+      "capabilities": ["MATERIAL", "NOTES"],
+      "restrictions": {
+        "packages": ["com.instagram.android", "com.zhiliaoapp.musically"],
+        "categories": ["SOCIAL", "ENTERTAINMENT"]
+      }
+    },
+    {
+      "id": "measure",
+      "type": "MEASURE",
+      "title": "Experimentar",
+      "durationMinutes": 10,
+      "capabilities": ["ACCELEROMETER", "TIMER"],
+      "restrictions": {
+        "packages": ["com.instagram.android", "com.zhiliaoapp.musically"],
+        "categories": ["SOCIAL", "ENTERTAINMENT"]
+      }
+    },
+    {
+      "id": "analyse",
+      "type": "ANALYSE",
+      "title": "Analisar",
+      "durationMinutes": 10,
+      "capabilities": ["CHART", "CALCULATOR"],
+      "restrictions": {
+        "packages": ["com.instagram.android", "com.zhiliaoapp.musically"],
+        "categories": ["SOCIAL", "ENTERTAINMENT"]
+      }
+    },
+    {
+      "id": "reflect",
+      "type": "REFLECT",
+      "title": "Reflectir",
+      "durationMinutes": 5,
+      "capabilities": ["REFLECTION"],
+      "restrictions": {
+        "packages": ["com.instagram.android", "com.zhiliaoapp.musically"],
+        "categories": ["SOCIAL", "ENTERTAINMENT"]
+      }
+    }
+  ],
+  "policy": {
+    "integrityMonitoring": true,
+    "offlineExecution": true
+  },
+  "issuedAt": "2026-09-12T00:00:00.000Z",
+  "durationMs": 1800000
+}
+

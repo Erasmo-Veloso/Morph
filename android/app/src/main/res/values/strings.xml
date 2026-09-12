@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Morph</string>
+    <string name="accessibility_service_description">Protege a aula contra aplicações restringidas durante uma Capsule.</string>
+</resources>
+
