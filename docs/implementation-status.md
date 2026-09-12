@@ -24,7 +24,8 @@ Updated: 2026-09-12
   it is covered by `npm run validate`.
 - `npm run validate` includes an isolated realtime smoke test covering Capsule
   assignment, `UNDERSTAND`, `MEASURE`, idempotent duplicate Sentinel ACK and
-  `FINISHED`.
+  `FINISHED`; it also checks that the public teacher page contains its control
+  surface.
 - `npm run validate` also restarts an isolated teacher server and verifies that
   an active `MEASURE` session and its Sentinel idempotency state are restored
   from persisted state.

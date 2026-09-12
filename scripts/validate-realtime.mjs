@@ -41,6 +41,11 @@ const nextMessage = (predicate, timeoutMs = 3000) => new Promise((resolve, rejec
 let socket;
 try {
   const initialHealth = await waitForHealth();
+  const pageResponse = await fetch(baseUrl);
+  const page = await pageResponse.text();
+  if (!pageResponse.ok || !page.includes('id="start"') || !page.includes('Teacher control')) {
+    throw new Error("Public teacher page is not functional");
+  }
   socket = new WebSocket(`ws://127.0.0.1:${port}/realtime`);
   socket.on("message", (raw) => {
     const message = JSON.parse(raw.toString());
