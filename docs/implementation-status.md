@@ -5,7 +5,8 @@ Updated: 2026-09-12
 ## PROVEN
 
 - `fixtures/physics-capsule.json` passes the local runtime validation script.
-- Valid and invalid capsule cases are checked by `npm run validate`.
+- Valid and invalid capsule cases, including duplicate phase types, are checked
+  by `npm run validate`.
 - The real TypeScript contract parser runs in `npm run validate` with strict
   compiler settings.
 - Android SDK is configured at `/home/helio/Android/Sdk`; platform 36,
