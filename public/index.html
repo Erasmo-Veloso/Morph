@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Morph · Teacher Control</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #111318; color: #f5f6f8; }
+      body { max-width: 720px; margin: 0 auto; padding: 40px 22px; }
+      .eyebrow { color: #9da7b9; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
+      h1 { font-size: clamp(34px, 8vw, 58px); line-height: .98; margin: 14px 0 10px; }
+      p { color: #aeb6c4; }
+      .card { border: 1px solid #2d3440; border-radius: 18px; padding: 20px; margin-top: 26px; background: #181b22; }
+      .phase { font-size: 26px; font-weight: 700; margin: 8px 0; }
+      .meta { color: #98a4b8; font-size: 14px; }
+      button { border: 0; border-radius: 999px; padding: 12px 18px; margin: 8px 8px 0 0; font-weight: 700; cursor: pointer; background: #d7ff63; color: #10130c; }
+      button.secondary { background: #2c3443; color: #f5f6f8; }
+      button:disabled { opacity: .4; cursor: not-allowed; }
+      #log { white-space: pre-wrap; color: #8491a6; font: 12px ui-monospace, monospace; margin-top: 20px; }
+    </style>
+  </head>
+  <body>
+    <div class="eyebrow">Morph · Executable Learning Capsule</div>
+    <h1>Teacher control</h1>
+    <p>O professor muda a intenção pedagógica. O smartphone muda de função.</p>
+    <section class="card">
+      <div class="meta" id="lesson">A ligar…</div>
+      <div class="phase" id="phase">—</div>
+      <div class="meta" id="status">Sem sessão</div>
+      <button id="start">Start capsule</button>
+      <button class="secondary" id="next" disabled>Next phase</button>
+      <button class="secondary" id="end" disabled>End session</button>
+      <div id="log"></div>
+    </section>
+    <script>
+      const phase = document.querySelector('#phase');
+      const status = document.querySelector('#status');
+      const lesson = document.querySelector('#lesson');
+      const log = document.querySelector('#log');
+      const start = document.querySelector('#start');
+      const next = document.querySelector('#next');
+      const end = document.querySelector('#end');
+      const realtimeUrl = location.protocol === 'file:'
+        ? 'ws://localhost:8787/realtime'
+        : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/realtime`;
+      const socket = new WebSocket(realtimeUrl);
+      socket.onerror = () => { status.textContent = 'Servidor indisponível · execute npm start'; };
+      let current = 'IDLE';
+      const write = (line) => log.textContent = `${line}\n${log.textContent}`.slice(0, 1800);
+      const render = (value, running) => { current = value; phase.textContent = value; status.textContent = running ? 'Sessão activa' : 'Sem sessão'; next.disabled = !running || value === 'REFLECT'; end.disabled = !running; };
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        if (message.type === 'capsule:assigned') { lesson.textContent = `${message.capsule.lesson.subject} · ${message.capsule.lesson.topic} · ${message.capsule.lesson.durationMinutes} min`; write('Capsule recebida'); }
+        if (message.type === 'session:state') render(message.phase, message.running);
+        if (message.type === 'session:started') { render(message.phase.type, true); write('Session started'); }
+        if (message.type === 'phase:changed') { render(message.phase.type, true); write(`phase:changed → ${message.phase.type}`); }
+        if (message.type === 'session:ended') { render('FINISHED', false); write('Session ended · policy cleanup requested'); }
+        if (message.type === 'device:status') { write(`device:status → ${message.status.phase || 'idle'} · ${message.status.connectivity}`); }
+      };
+      start.onclick = () => socket.send(JSON.stringify({ type: 'teacher:start' }));
+      next.onclick = () => socket.send(JSON.stringify({ type: 'teacher:next' }));
+      end.onclick = () => socket.send(JSON.stringify({ type: 'teacher:end' }));
+    </script>
+  </body>
+</html>
