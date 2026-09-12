@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "tsx scripts/validate-contract.ts && node scripts/validate.mjs && node scripts/validate-realtime.mjs && node scripts/validate-session-persistence.mjs",
+    "typecheck": "tsc --noEmit --pretty false",
+    "validate": "npm run typecheck && tsx scripts/validate-contract.ts && node scripts/validate.mjs && node scripts/validate-realtime.mjs && node scripts/validate-session-persistence.mjs",
     "start": "node server/index.mjs"
   },
   "dependencies": {
