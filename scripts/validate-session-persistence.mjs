@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
+import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
 
 const port = 8789;
@@ -78,6 +79,22 @@ try {
   first.socket.send(JSON.stringify({ type: "teacher:next" }));
   const changed = await first.next((message) => message.type === "phase:changed");
   if (changed.phase.type !== "MEASURE") throw new Error("Expected MEASURE before restart");
+  const event = {
+    id: randomUUID(),
+    studentId: "validate-student",
+    capsuleId: changed.capsuleId,
+    phaseId: changed.phase.id,
+    type: "CONNECTIVITY_CHANGED",
+    occurredAt: Date.now(),
+    payload: "state=LOCAL"
+  };
+  const eventMessage = JSON.stringify({ type: "sentinel:event", event });
+  first.socket.send(eventMessage);
+  await first.next((message) => message.type === "session:ack" && message.eventId === event.id);
+  const beforeRestart = await (await fetch(`${baseUrl}/health`)).json();
+  if (beforeRestart.acknowledgedEventCount !== 1 || beforeRestart.sentinelTimelineCount !== 1) {
+    throw new Error("Sentinel event was not recorded before restart");
+  }
   await delay(200);
   first.socket.close();
   await stopServer();
@@ -87,6 +104,12 @@ try {
   await resumed.next((message) => message.type === "capsule:assigned");
   const state = await resumed.next((message) => message.type === "session:state");
   if (!state.running || state.phase !== "MEASURE") throw new Error("Active phase was not restored after restart");
+  resumed.socket.send(eventMessage);
+  await resumed.next((message) => message.type === "session:ack" && message.eventId === event.id);
+  const afterRestart = await (await fetch(`${baseUrl}/health`)).json();
+  if (afterRestart.acknowledgedEventCount !== 1 || afterRestart.sentinelTimelineCount !== 1) {
+    throw new Error("Duplicate Sentinel event was recorded after restart");
+  }
   resumed.socket.close();
   console.log("Teacher session persistence across server restart: PASS");
 } finally {

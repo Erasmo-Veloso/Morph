@@ -36,6 +36,7 @@ Android LessonRuntime + PhaseEngine
 
 The demo server uses one WebSocket endpoint. `teacher:next` is broadcast as
 `phase:changed`, which makes the Android state transition observable in real
-time. Android also reports `device:status` with student, current phase,
-connectivity, integrity and last-seen timestamp; the server keeps the latest
-status in memory for the teacher session.
+time. Android also reports `device:status` with student, class, current phase,
+connectivity, integrity and last-seen timestamp. The server keeps the latest
+status in memory and persists the acknowledged Sentinel IDs and minimal event
+timeline alongside the teacher session state.

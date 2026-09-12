@@ -26,11 +26,13 @@ Updated: 2026-09-12
   assignment, `UNDERSTAND`, `MEASURE`, idempotent duplicate Sentinel ACK and
   `FINISHED`.
 - `npm run validate` also restarts an isolated teacher server and verifies that
-  an active `MEASURE` session is restored from persisted state.
+  an active `MEASURE` session and its Sentinel idempotency state are restored
+  from persisted state.
 - Teacher control server and browser controls are implemented with a WebSocket
   protocol: assignment, start, next, end and Sentinel acknowledgement.
 - Server-side duplicate Sentinel deliveries are ACKed idempotently; a local
-  smoke test delivered the same event twice and processed it once.
+  smoke test delivered the same event twice and processed it once. The
+  acknowledged IDs and minimal Sentinel timeline survive a server restart.
 - Android source contains explicit Capsule parsing, phase transitions, policy
   cleanup, Room-first Sentinel persistence and a real `Sensor.TYPE_ACCELEROMETER`
   integration.

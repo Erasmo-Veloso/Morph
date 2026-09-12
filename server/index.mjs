@@ -15,16 +15,29 @@ if (process.env.MORPH_EMULATOR_DEMO === "1") {
 }
 const clients = new Set();
 const deviceStatuses = new Map();
-const acknowledgedEventIds = new Set();
 const persistedState = await readFile(stateFile, "utf8")
   .then((raw) => JSON.parse(raw))
   .catch(() => ({}));
+const acknowledgedEventIds = new Set(
+  Array.isArray(persistedState.acknowledgedEventIds) ? persistedState.acknowledgedEventIds : []
+);
 let phaseIndex = Number.isInteger(persistedState.phaseIndex) ? persistedState.phaseIndex : 0;
 let running = persistedState.capsuleId === capsule.id && persistedState.running === true;
+const sentinelTimeline = Array.isArray(persistedState.sentinelTimeline) ? persistedState.sentinelTimeline : [];
+let persistChain = Promise.resolve();
 
 function persistSessionState() {
-  return writeFile(stateFile, JSON.stringify({ capsuleId: capsule.id, phaseIndex, running }) + "\n")
+  const snapshot = JSON.stringify({
+    capsuleId: capsule.id,
+    phaseIndex,
+    running,
+    acknowledgedEventIds: [...acknowledgedEventIds],
+    sentinelTimeline
+  }) + "\n";
+  persistChain = persistChain
+    .then(() => writeFile(stateFile, snapshot))
     .catch((error) => console.error(`Could not persist session state: ${error.message}`));
+  return persistChain;
 }
 
 function broadcast(message) {
@@ -50,7 +63,12 @@ function stateMessage() {
 const server = createServer(async (request, response) => {
   if (request.url?.split("?", 1)[0] === "/health") {
     response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
-    response.end(JSON.stringify({ status: "ok", acknowledgedEventCount: acknowledgedEventIds.size, connectedClients: clients.size }));
+    response.end(JSON.stringify({
+      status: "ok",
+      acknowledgedEventCount: acknowledgedEventIds.size,
+      sentinelTimelineCount: sentinelTimeline.length,
+      connectedClients: clients.size
+    }));
     return;
   }
   const requested = request.url === "/" ? "/index.html" : request.url;
@@ -100,14 +118,17 @@ websocket.on("connection", (socket) => {
       const eventId = message.event?.id;
       if (eventId && !acknowledgedEventIds.has(eventId)) {
         acknowledgedEventIds.add(eventId);
+        sentinelTimeline.push({ ...message.event, receivedAt: Date.now() });
+        void persistSessionState();
         console.log(JSON.stringify({ received: "sentinel:event", eventId }));
       }
       socket.send(JSON.stringify({ type: "session:ack", eventId }));
       return;
     }
     if (message.type === "device:status") {
-      deviceStatuses.set(message.studentId ?? "unknown", { ...message, receivedAt: Date.now() });
-      broadcast({ type: "device:status", status: message });
+      const status = { ...message, classId: message.classId ?? capsule.lesson.classId, receivedAt: Date.now() };
+      deviceStatuses.set(status.studentId ?? "unknown", status);
+      broadcast({ type: "device:status", status });
     }
   });
   socket.on("close", () => clients.delete(socket));
