@@ -1,5 +1,6 @@
 package com.morph.runtime
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,7 +28,12 @@ class ShieldActivity : ComponentActivity() {
                 Text("Esta aplicação não faz parte da etapa actual.", color = Color.White, fontSize = 28.sp, modifier = Modifier.padding(top = 18.dp))
                 Text("Etapa actual: ${phase?.name ?: "aula"}", color = Color(0xFF9BA5B6), fontSize = 16.sp, modifier = Modifier.padding(top = 18.dp))
                 Text("Volte à aula para continuar a Capsule.", color = Color(0xFF9BA5B6), fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp, bottom = 28.dp))
-                Button(onClick = { finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD8FF63), contentColor = Color(0xFF101114))) { Text("Voltar à aula") }
+                Button(onClick = {
+                    startActivity(Intent(this@ShieldActivity, MainActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    })
+                    finish()
+                }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD8FF63), contentColor = Color(0xFF101114))) { Text("Voltar à aula") }
             }
         }
     }
@@ -37,4 +43,3 @@ class ShieldActivity : ComponentActivity() {
         const val PHASE_TYPE = "phaseType"
     }
 }
-

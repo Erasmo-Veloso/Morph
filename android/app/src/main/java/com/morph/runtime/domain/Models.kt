@@ -1,7 +1,10 @@
 package com.morph.runtime.domain
 
 enum class PhaseType { UNDERSTAND, MEASURE, ANALYSE, REFLECT }
-enum class Capability { MATERIAL, NOTES, ACCELEROMETER, TIMER, CHART, CALCULATOR, REFLECTION }
+enum class Capability {
+    LEARNING_CONTENT, GUIDED_EXPLANATION, ACCELEROMETER, GYROSCOPE, CAMERA,
+    CHRONOMETER, COLLECTED_DATA, GRAPH, CALCULATOR, EXIT_TICKET
+}
 enum class Connectivity { ONLINE, LOCAL, ISOLATED }
 enum class Integrity { VERIFIED, UNVERIFIED }
 enum class RuntimeStage { IDLE, CAPSULE_RECEIVED, READY, UNDERSTAND, MEASURE, ANALYSE, REFLECT, FINISHED }
@@ -19,16 +22,13 @@ data class Phase(
 data class LessonCapsule(
     val id: String,
     val version: Int,
-    val subject: String,
-    val topic: String,
-    val classId: String,
-    val teacherId: String,
-    val durationMinutes: Int,
+    val objective: String,
     val phases: List<Phase>,
     val integrityMonitoring: Boolean,
     val offlineExecution: Boolean,
-    val issuedAt: String,
-    val durationMs: Long
+    val validFrom: String,
+    val validUntil: String,
+    val signature: String?
 )
 
 data class RuntimeState(

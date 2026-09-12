@@ -78,7 +78,7 @@ try {
   await first.next((message) => message.type === "session:started");
   first.socket.send(JSON.stringify({ type: "teacher:next" }));
   const changed = await first.next((message) => message.type === "phase:changed");
-  if (changed.phase.type !== "MEASURE") throw new Error("Expected MEASURE before restart");
+  if (changed.phase.id !== "MEASURE") throw new Error("Expected MEASURE before restart");
   const event = {
     id: randomUUID(),
     studentId: "validate-student",

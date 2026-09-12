@@ -62,6 +62,7 @@ private fun MorphScreen(app: MorphApplication) {
     val runtime by app.engine.state.collectAsState()
     val samples by app.accelerometer.samples.collectAsState()
     val magnitude by app.accelerometer.magnitude.collectAsState()
+    val pendingEvents by app.sentinel.pendingCount.collectAsState(initial = 0)
     val phase = runtime.currentPhase
 
     LaunchedEffect(runtime.running, phase?.type) {
@@ -74,7 +75,7 @@ private fun MorphScreen(app: MorphApplication) {
             Text("MORPH", color = Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
             Text("${phase?.title ?: "A sua aula"}", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Bold)
             Text(runtime.status, color = Muted, fontSize = 15.sp)
-            StatusRow(runtime.connectivity.name, runtime.running)
+            StatusRow(runtime.connectivity.name, runtime.running, pendingEvents)
             androidx.compose.material3.TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }) {
                 Text("Abrir permissões de protecção", color = Accent)
             }
@@ -91,10 +92,11 @@ private fun MorphScreen(app: MorphApplication) {
 }
 
 @Composable
-private fun StatusRow(connectivity: String, running: Boolean) {
+private fun StatusRow(connectivity: String, running: Boolean, pendingEvents: Int) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         Badge(if (running) "EM AULA" else "A AGUARDAR", if (running) Accent else Muted)
         Badge(connectivity, if (connectivity == Connectivity.ISOLATED.name) Warning else Muted)
+        Badge("SENTINEL $pendingEvents", if (pendingEvents > 0) Warning else Muted)
     }
 }
 

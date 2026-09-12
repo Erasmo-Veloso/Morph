@@ -52,8 +52,8 @@
         const message = JSON.parse(event.data);
         if (message.type === 'capsule:assigned') { lesson.textContent = `${message.capsule.lesson.subject} · ${message.capsule.lesson.topic} · ${message.capsule.lesson.durationMinutes} min`; write('Capsule recebida'); }
         if (message.type === 'session:state') render(message.phase, message.running);
-        if (message.type === 'session:started') { render(message.phase.type, true); write('Session started'); }
-        if (message.type === 'phase:changed') { render(message.phase.type, true); write(`phase:changed → ${message.phase.type}`); }
+        if (message.type === 'session:started') { render(message.phase.id, true); write('Session started'); }
+        if (message.type === 'phase:changed') { render(message.phase.id, true); write(`phase:changed → ${message.phase.id}`); }
         if (message.type === 'session:ended') { render('FINISHED', false); write('Session ended · policy cleanup requested'); }
         if (message.type === 'device:status') { write(`device:status → ${message.status.phase || 'idle'} · ${message.status.connectivity}`); }
       };

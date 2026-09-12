@@ -18,7 +18,6 @@ class PolicyAccessibilityService : AccessibilityService() {
         if (packageName == lastPackage && now - lastAttemptAt < 1500) return
         lastPackage = packageName
         lastAttemptAt = now
-        performGlobalAction(GLOBAL_ACTION_BACK)
         MorphApplication.instance.scope.launch {
             MorphApplication.instance.sentinel.record(policy.capsuleId, policy.phaseId, "RESTRICTED_ACCESS_ATTEMPT", "package=$packageName")
             MorphApplication.instance.session.syncPending()

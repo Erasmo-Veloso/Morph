@@ -23,10 +23,11 @@ Updated: 2026-09-12
   connectivity mapping.
 - Deterministic planner fallback maps Portuguese pedagogical intent to phases;
   it is covered by `npm run validate`.
-- `npm run validate` includes an isolated realtime smoke test covering Capsule
-  assignment, `UNDERSTAND`, `MEASURE`, idempotent duplicate Sentinel ACK and
-  `FINISHED`; it also checks that the public teacher page contains its control
-  surface.
+- `npm run validate` includes an isolated realtime smoke test covering the
+  dashboard bridge (`/bridge/capsule`, `/bridge/command`, `/bridge/status`),
+  invalid Capsule rejection, `UNDERSTAND`, `MEASURE`, device status,
+  idempotent duplicate Sentinel ACK and `FINISHED`; it also checks that the
+  public teacher page contains its control surface.
 - `npm run validate` also restarts an isolated teacher server and verifies that
   an active `MEASURE` session and its Sentinel idempotency state are restored
   from persisted state.
@@ -40,20 +41,24 @@ Updated: 2026-09-12
   integration.
 - A real API 36 emulator named `morph-api36` booted, the debug APK installed,
   and the Android runtime completed the WebSocket flow through the visible UI.
-- With `MORPH_EMULATOR_DEMO=1`, the installed Chrome package was added to the
-  active Capsule policy. AccessibilityService detected Chrome, returned to
-  Morph, opened `MORPH SHIELD`, and Room persisted one
-  `RESTRICTED_ACCESS_ATTEMPT`.
-- Teacher `start` and `next` produced visible `UNDERSTAND` and `MEASURE` UI
-  states. `sensorservice` showed `AccelerometerEngine` registered; emulator
-  sensor input changed the visible magnitude from `9.81` to `7.07` and then
-  `12.00 m/s²`.
-- Stopping the server left the active phase running while Room retained
-  unsynced `CONNECTIVITY_CHANGED` rows. The server persists its teacher session
-  state; after restart the active `MEASURE` phase was restored as `LOCAL`, all
-  pending rows were ACKed, and the server logged each event id once.
-- Teacher `end` produced visible `FINISHED`, `Sessão terminada · policy limpa`,
-  no active Morph sensor registration, and no deletion of Sentinel rows.
+- The Erasmo Next.js dashboard now publishes the confirmed Capsule, relays
+  start/next/end commands to the Android runtime, and displays polled Android
+  connectivity, current phase and the latest Sentinel event.
+- With `MORPH_EMULATOR_DEMO=1`, the installed Chrome package is added to the
+  `UNDERSTAND` policy even after a Capsule is published by the dashboard.
+  AccessibilityService detected Chrome, kept `MORPH SHIELD` visible, and Room
+  persisted `RESTRICTED_ACCESS_ATTEMPT` before its successful ACK.
+- Teacher `start` and `next` through the Next.js API produced visible
+  `UNDERSTAND` and `MEASURE` Android states. `sensorservice` showed
+  `AccelerometerEngine` registered; emulator SensorManager input changed the
+  visible magnitude from `9.80` to `8.77 m/s²`.
+- Stopping the server left `MEASURE` and its sensor listener active while the
+  runtime reported `ISOLATED` and Room retained the unsynced connectivity
+  event. After restart, `MEASURE` returned `ONLINE`; all queued rows were ACKed
+  and the server timeline contained 21 unique IDs for 21 events.
+- Teacher `end` through the Next.js API produced visible `FINISHED`, `Sessão
+  terminada · policy limpa`, no Morph connection among active sensorservice
+  clients, and no deletion of Sentinel rows.
 
 ## PARTIAL
 
