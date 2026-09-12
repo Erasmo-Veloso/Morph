@@ -8,7 +8,9 @@
 3. For a physical device, build with the laptop's LAN address without editing
    source: `MORPH_SERVER_URL=ws://192.168.x.x:8787/realtime scripts/android-build.sh`.
    Keep the phone and laptop on the same network and allow port 8787 through
-   the local firewall. The default `10.0.2.2` targets an emulator.
+   the local firewall. The default `10.0.2.2` targets an emulator. If an
+   emulator remains connected, set `ADB_SERIAL=<phone-serial>` for install,
+   diagnostics and logcat.
 4. On the Android device, enable Morph under Accessibility. This is an
    explicit OS permission required for package-level enforcement.
 
