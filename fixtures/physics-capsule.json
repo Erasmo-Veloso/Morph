@@ -1,0 +1,52 @@
+{
+  "id": "physics-accelerated-motion-001",
+  "version": 1,
+  "objective": "Compreender o movimento acelerado através de explicação, medição, análise e reflexão",
+  "phases": [
+    {
+      "id": "UNDERSTAND",
+      "duration": 300,
+      "capabilities": ["LEARNING_CONTENT", "GUIDED_EXPLANATION"],
+      "restrictions": ["SOCIAL_APPS", "MESSAGING"],
+      "learning_assets": [{ "id": "understand-motion", "title": "Movimento acelerado", "kind": "TEXT", "local": true }],
+      "transitions": { "next": "MEASURE" }
+    },
+    {
+      "id": "MEASURE",
+      "duration": 600,
+      "capabilities": ["ACCELEROMETER", "CHRONOMETER"],
+      "restrictions": ["SOCIAL_APPS", "MESSAGING", "UNRELATED_BROWSER"],
+      "learning_assets": [{ "id": "measure-protocol", "title": "Protocolo da experiência", "kind": "PROMPT", "local": true }],
+      "transitions": { "next": "ANALYSE" }
+    },
+    {
+      "id": "ANALYSE",
+      "duration": 600,
+      "capabilities": ["COLLECTED_DATA", "GRAPH", "CALCULATOR"],
+      "restrictions": ["SOCIAL_APPS", "MESSAGING"],
+      "learning_assets": [{ "id": "analysis-template", "title": "Gráfico e cálculo", "kind": "DATASET", "local": true }],
+      "transitions": { "next": "REFLECT" }
+    },
+    {
+      "id": "REFLECT",
+      "duration": 300,
+      "capabilities": ["EXIT_TICKET"],
+      "restrictions": ["SOCIAL_APPS", "MESSAGING"],
+      "learning_assets": [{ "id": "exit-ticket", "title": "Conclusão individual", "kind": "PROMPT", "local": true }],
+      "transitions": { "next": null }
+    }
+  ],
+  "integrity_policy": {
+    "enabled": true,
+    "sentinel_events": ["RESTRICTED_ACCESS_ATTEMPT", "CONNECTIVITY_CHANGED"],
+    "privacy": "POLICY_INTEGRITY_ONLY"
+  },
+  "offline_policy": {
+    "enabled": true,
+    "assets": "LOCAL_CACHE",
+    "events": "LOCAL_QUEUE"
+  },
+  "valid_from": "2026-09-12T00:00:00.000Z",
+  "valid_until": "2026-09-14T23:59:59.000Z",
+  "signature": "demo-signature-hkt-04"
+}

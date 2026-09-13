@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import {
   Activity,
   ArrowRight,
@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import type { Capability, CompileResult, LearningCapsule, LearningPhase, PhaseId } from "@/lib/capsule";
 import type { LessonSession } from "@/lib/session-store";
+import type { RuntimeStatus } from "@/lib/runtime-bridge";
 
 const defaultIntent =
   "Ensinar movimento acelerado com uma explicação breve, experimento prático, análise de resultados e reflexão.";
@@ -103,6 +104,20 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const [view, setView] = useState<"intent" | "configure" | "present">("intent");
   const [selectedPhaseId, setSelectedPhaseId] = useState<PhaseId>("UNDERSTAND");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatus | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      const response = await fetch("/api/runtime/status", { cache: "no-store" }).catch(() => null);
+      if (!response?.ok) return;
+      const status = await response.json() as RuntimeStatus;
+      if (active) setRuntimeStatus(status);
+    };
+    void refresh();
+    const timer = window.setInterval(refresh, 1000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
 
   const activePhase = useMemo(() => {
     if (!session || session.currentPhase === "COMPLETED") return null;
@@ -114,6 +129,8 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const presentationIndex = capsule.phases.findIndex((phase) => phase.id === presentationPhase.id);
   const isLastPhase = presentationIndex === capsule.phases.length - 1;
   const PhaseIcon = phaseMeta[presentationPhase.id].icon;
+  const runtimeDevice = runtimeStatus?.devices.at(-1);
+  const latestRuntimeEvent = runtimeStatus?.events.at(-1);
 
   async function runAction(action: () => Promise<ApiResponse>) {
     setIsBusy(true);
@@ -178,7 +195,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
         </a>
         <div className="header-status">
           <span className="status-dot" />
-          <span>Simulação guiada</span>
+          <span>{runtimeDevice ? `Android · ${runtimeDevice.connectivity}` : "Aguardando Android"}</span>
         </div>
         <button className="preview-trigger" type="button" onClick={() => setIsPreviewOpen(true)}>
           <Eye size={16} /> Ver dispositivo
@@ -286,6 +303,11 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
               )}
               <span>{!session ? "A Cápsula está pronta para ser enviada ao dispositivo." : "O dispositivo atualiza-se imediatamente."}</span>
             </div>
+            {session ? <section className="runtime-live" aria-label="Estado real do Android">
+              <div><span>Android</span><strong>{runtimeDevice?.phase ?? runtimeStatus?.session.phase ?? "A ligar"}</strong></div>
+              <div><span>Conectividade</span><strong>{runtimeDevice?.connectivity ?? "SEM DISPOSITIVO"}</strong></div>
+              <div><span>Sentinel</span><strong>{latestRuntimeEvent?.type ?? "Sem incidentes"}</strong></div>
+            </section> : null}
           </section>
         )}
       </section>
