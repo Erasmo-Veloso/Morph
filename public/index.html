@@ -3,63 +3,281 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
     <title>Morph · Teacher Control</title>
     <style>
-      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #111318; color: #f5f6f8; }
-      body { max-width: 720px; margin: 0 auto; padding: 40px 22px; }
-      .eyebrow { color: #9da7b9; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
-      h1 { font-size: clamp(34px, 8vw, 58px); line-height: .98; margin: 14px 0 10px; }
-      p { color: #aeb6c4; }
-      .card { border: 1px solid #2d3440; border-radius: 18px; padding: 20px; margin-top: 26px; background: #181b22; }
-      .phase { font-size: 26px; font-weight: 700; margin: 8px 0; }
-      .meta { color: #98a4b8; font-size: 14px; }
-      button { border: 0; border-radius: 999px; padding: 12px 18px; margin: 8px 8px 0 0; font-weight: 700; cursor: pointer; background: #d7ff63; color: #10130c; }
-      button.secondary { background: #2c3443; color: #f5f6f8; }
-      button:disabled { opacity: .4; cursor: not-allowed; }
-      #log { white-space: pre-wrap; color: #8491a6; font: 12px ui-monospace, monospace; margin-top: 20px; }
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #14254d;
+        background: #f8fbff;
+        font-synthesis: none;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; background: #f8fbff; }
+      button { font: inherit; }
+      .page { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 30px 0 42px; }
+      .topbar { display: flex; align-items: flex-start; gap: 24px; }
+      .brand { width: 196px; height: auto; display: block; }
+      .topbar-spacer { flex: 1; }
+      .event-mark { text-align: right; color: #14254d; font-size: 11px; font-weight: 800; letter-spacing: .2em; }
+      .event-line { width: 38px; height: 4px; margin: 12px 0 0 auto; background: #1f6bff; }
+
+      .eyebrow { margin-top: 48px; color: #1f6bff; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+      h1 { max-width: 760px; margin: 18px 0 12px; font-size: clamp(42px, 7vw, 78px); line-height: .98; letter-spacing: -.055em; }
+      h1 .accent { color: #1f6bff; }
+      .lede { max-width: 650px; margin: 0; color: #627493; font-size: clamp(18px, 2.4vw, 25px); line-height: 1.3; }
+
+      .workspace { position: relative; margin-top: 46px; padding: 28px; overflow: hidden; border: 1px solid #d6e5f7; border-radius: 26px; background: #fff; box-shadow: 0 16px 48px rgba(20, 37, 77, .08); }
+      .workspace::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: #1f6bff; }
+      .workspace-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+      .workspace-title { margin: 0; font-size: 31px; line-height: 1.05; letter-spacing: -.035em; }
+      .lesson { max-width: 340px; color: #627493; font-size: 13px; line-height: 1.35; text-align: right; }
+
+      .phase-rail { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin: 38px 0 30px; }
+      .phase-step { position: relative; min-width: 0; }
+      .phase-step::after { content: ""; position: absolute; top: 18px; left: 38px; right: -18px; height: 2px; background: #d6e5f7; }
+      .phase-step:last-child::after { display: none; }
+      .phase-dot { position: relative; z-index: 1; display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: #eaf3ff; color: #627493; font-size: 13px; font-weight: 800; transition: background .25s ease, color .25s ease, transform .25s ease; }
+      .phase-step.active .phase-dot { background: #1f6bff; color: #fff; }
+      .phase-step.done .phase-dot { background: #dceaff; color: #1f6bff; }
+      .phase-name { display: block; margin-top: 11px; color: #14254d; font-size: 13px; font-weight: 800; }
+      .phase-description { display: block; margin-top: 5px; color: #627493; font-size: 12px; line-height: 1.3; }
+
+      .demo-layout { display: grid; grid-template-columns: minmax(250px, .8fr) minmax(440px, 1.2fr); gap: 36px; align-items: center; }
+      .demo-copy { padding: 10px 0 10px 8px; }
+      .demo-copy h2 { margin: 0 0 12px; font-size: clamp(29px, 4vw, 45px); line-height: 1.02; letter-spacing: -.045em; }
+      .demo-copy h2 .blue { color: #1f6bff; }
+      .demo-copy p { margin: 0; color: #627493; font-size: 17px; line-height: 1.4; }
+      .blue-rule { width: 48px; height: 4px; margin: 22px 0; background: #1f6bff; }
+      .live-label { display: flex; align-items: center; gap: 8px; color: #1f6bff; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+      .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #2ebb80; box-shadow: 0 0 0 5px #e4f8ef; }
+
+      .phone-stage { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: end; min-height: 480px; }
+      .phone-column { min-width: 0; text-align: center; }
+      .phone-label { min-height: 42px; margin-bottom: 10px; color: #14254d; font-size: 13px; font-weight: 800; line-height: 1.25; }
+      .phone-frame { position: relative; width: 100%; aspect-ratio: 9 / 18.7; overflow: hidden; border: 7px solid #14254d; border-radius: 28px; background: #fff; box-shadow: 0 15px 25px rgba(20, 37, 77, .17); transform: translateY(8px) scale(.96); opacity: .54; transition: opacity .35s ease, transform .35s ease, box-shadow .35s ease; }
+      .phone-frame::after { content: ""; position: absolute; top: 7px; left: 50%; width: 56px; height: 14px; border-radius: 10px; background: #14254d; transform: translateX(-50%); opacity: .94; }
+      .phone-frame img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+      .phone-column.active .phone-frame { transform: translateY(0) scale(1); opacity: 1; box-shadow: 0 24px 36px rgba(31, 107, 255, .2); }
+      .phone-column.active .phone-label { color: #1f6bff; }
+
+      .control-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 30px; padding-top: 22px; border-top: 1px solid #d6e5f7; }
+      .control-status { flex: 1; min-width: 180px; color: #627493; font-size: 13px; }
+      .control-status strong { display: block; margin-bottom: 3px; color: #14254d; font-size: 15px; }
+      button { border: 0; border-radius: 10px; padding: 13px 18px; cursor: pointer; font-size: 13px; font-weight: 800; transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease; }
+      button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 18px rgba(31, 107, 255, .18); }
+      button:disabled { cursor: not-allowed; opacity: .42; }
+      .primary { background: #1f6bff; color: #fff; }
+      .secondary { background: #eaf3ff; color: #1f6bff; }
+      .neutral { background: #14254d; color: #fff; }
+
+      .proof-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 28px; }
+      .proof-item { padding-top: 18px; border-top: 2px solid #d6e5f7; }
+      .proof-item h3 { margin: 0 0 7px; color: #14254d; font-size: 16px; }
+      .proof-item p { margin: 0; color: #627493; font-size: 13px; line-height: 1.4; }
+      .footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 42px; color: #627493; font-size: 10px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+
+      @media (max-width: 840px) {
+        .page { width: min(100% - 30px, 680px); padding-top: 22px; }
+        .workspace { padding: 20px; }
+        .demo-layout { grid-template-columns: 1fr; gap: 24px; }
+        .demo-copy { padding-left: 0; }
+        .phone-stage { min-height: 390px; }
+      }
+      @media (max-width: 560px) {
+        .brand { width: 150px; }
+        .event-mark { font-size: 8px; }
+        .eyebrow { margin-top: 34px; font-size: 10px; }
+        .phase-rail { gap: 6px; }
+        .phase-step::after { left: 31px; right: -7px; }
+        .phase-dot { width: 30px; height: 30px; font-size: 11px; }
+        .phase-step::after { top: 15px; }
+        .phase-name { font-size: 10px; }
+        .phase-description { display: none; }
+        .phone-stage { gap: 8px; min-height: 300px; }
+        .phone-frame { border-width: 4px; border-radius: 18px; }
+        .phone-frame::after { top: 4px; width: 35px; height: 8px; }
+        .phone-label { min-height: 33px; font-size: 10px; }
+        .proof-grid { grid-template-columns: 1fr; }
+        .footer { flex-direction: column; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+      }
     </style>
   </head>
   <body>
-    <div class="eyebrow">Morph · Executable Learning Capsule</div>
-    <h1>Teacher control</h1>
-    <p>O professor muda a intenção pedagógica. O smartphone muda de função.</p>
-    <section class="card">
-      <div class="meta" id="lesson">A ligar…</div>
-      <div class="phase" id="phase">—</div>
-      <div class="meta" id="status">Sem sessão</div>
-      <button id="start">Start capsule</button>
-      <button class="secondary" id="next" disabled>Next phase</button>
-      <button class="secondary" id="end" disabled>End session</button>
-      <div id="log"></div>
-    </section>
+    <main class="page">
+      <header class="topbar">
+        <img class="brand" src="/assets/morph-logo.jpg" alt="Morph · Aulas que transformam" />
+        <div class="topbar-spacer"></div>
+        <div class="event-mark">HACKTUDO 2026<div class="event-line"></div></div>
+      </header>
+
+      <div class="eyebrow">Uma nova relação com o smartphone</div>
+      <h1>O smartphone <span class="accent">metamorfoseia-se</span> conforme a aprendizagem.</h1>
+      <p class="lede">Aulas que transformam. Uma ferramenta certa para cada fase.</p>
+
+      <section class="workspace" aria-labelledby="workspace-title">
+        <div class="workspace-head">
+          <div>
+            <h2 class="workspace-title" id="workspace-title">A aula programa o smartphone.</h2>
+          </div>
+          <div class="lesson" id="lesson">A ligar ao runtime Morph…</div>
+        </div>
+
+        <div class="phase-rail" aria-label="Fases da Capsule">
+          <div class="phase-step active" data-step="UNDERSTAND"><span class="phase-dot">1</span><span class="phase-name">COMPREENDER</span><span class="phase-description">Conteúdo da aula</span></div>
+          <div class="phase-step" data-step="MEASURE"><span class="phase-dot">2</span><span class="phase-name">MEDIR</span><span class="phase-description">Dados do movimento</span></div>
+          <div class="phase-step" data-step="ANALYSE"><span class="phase-dot">3</span><span class="phase-name">ANALISAR</span><span class="phase-description">Padrões da experiência</span></div>
+          <div class="phase-step" data-step="REFLECT"><span class="phase-dot">4</span><span class="phase-name">REFLECTIR</span><span class="phase-description">Conclusões e acção</span></div>
+        </div>
+
+        <div class="demo-layout">
+          <div class="demo-copy">
+            <div class="live-label"><span class="live-dot"></span><span id="phase-label">A aguardar Capsule</span></div>
+            <div class="blue-rule"></div>
+            <h2 id="phase-title">O mesmo telefone.<br /><span class="blue">Mais possibilidades</span><br />para aprender.</h2>
+            <p id="phase-copy">O professor define a intenção. A Capsule prepara a capacidade certa para cada momento.</p>
+          </div>
+
+          <div class="phone-stage" aria-label="Ecrãs reais do Android runtime">
+            <div class="phone-column active" data-phone="UNDERSTAND">
+              <div class="phone-label">Compreender</div>
+              <div class="phone-frame"><img src="/assets/android/understand.png" alt="Android runtime · fase Compreender" /></div>
+            </div>
+            <div class="phone-column" data-phone="SHIELD">
+              <div class="phone-label">Morph Shield</div>
+              <div class="phone-frame"><img src="/assets/android/shield.png" alt="Android runtime · Morph Shield" /></div>
+            </div>
+            <div class="phone-column" data-phone="MEASURE">
+              <div class="phone-label">Medir</div>
+              <div class="phone-frame"><img src="/assets/android/measure.png" alt="Android runtime · acelerómetro real" /></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-bar">
+          <div class="control-status" id="status" aria-live="polite"><strong>Sem sessão</strong>O professor inicia a Capsule para começar.</div>
+          <button class="primary" id="start">Iniciar Capsule</button>
+          <button class="secondary" id="next" disabled>Próxima fase</button>
+          <button class="neutral" id="end" disabled>Terminar aula</button>
+        </div>
+      </section>
+
+      <section class="proof-grid" aria-label="O que a demonstração prova">
+        <article class="proof-item"><h3>Intenção pedagógica</h3><p>Uma aula traduzida em fases executáveis no dispositivo.</p></article>
+        <article class="proof-item"><h3>Capacidade real</h3><p>O telefone mede movimento com o acelerómetro local.</p></article>
+        <article class="proof-item"><h3>Política verificável</h3><p>O Shield protege o foco sem recolher conteúdo pessoal.</p></article>
+      </section>
+
+      <footer class="footer"><span>MORPH · PESSOAS · APRENDIZAGEM · POSSIBILIDADES</span><span>Teacher control · Runtime local</span></footer>
+    </main>
+
+    <script src="/vendor/gsap.min.js"></script>
     <script>
-      const phase = document.querySelector('#phase');
+      const phaseTitle = document.querySelector('#phase-title');
+      const phaseCopy = document.querySelector('#phase-copy');
+      const phaseLabel = document.querySelector('#phase-label');
       const status = document.querySelector('#status');
       const lesson = document.querySelector('#lesson');
-      const log = document.querySelector('#log');
       const start = document.querySelector('#start');
       const next = document.querySelector('#next');
       const end = document.querySelector('#end');
+      const steps = [...document.querySelectorAll('.phase-step')];
+      const phones = [...document.querySelectorAll('.phone-column')];
+      const gsapMotion = window.gsap;
+
+      const phaseIndex = { UNDERSTAND: 0, MEASURE: 1, ANALYSE: 2, REFLECT: 3, FINISHED: -1 };
+      const phaseContent = {
+        IDLE: { label: 'A aguardar Capsule', title: 'O mesmo telefone.<br /><span class="blue">Mais possibilidades</span><br />para aprender.', copy: 'O professor define a intenção. A Capsule prepara a capacidade certa para cada momento.' },
+        UNDERSTAND: { label: 'Capsule activa · Compreender', title: 'Conteúdo no<br /><span class="blue">momento certo.</span>', copy: 'A aula começa com contexto. O smartphone mantém o aluno dentro do fio da tarefa.' },
+        MEASURE: { label: 'Capsule activa · Medir', title: 'Dados reais<br /><span class="blue">da experiência.</span>', copy: 'O acelerómetro transforma o movimento do dispositivo numa observação que a turma pode interpretar.' },
+        ANALYSE: { label: 'Capsule activa · Analisar', title: 'Encontrar<br /><span class="blue">padrões.</span>', copy: 'A Capsule prepara os dados recolhidos para a leitura e a modelação do fenómeno.' },
+        REFLECT: { label: 'Capsule activa · Reflectir', title: 'Comunicar<br /><span class="blue">o que aprendemos.</span>', copy: 'A aula fecha o ciclo com uma conclusão e um próximo passo claro.' },
+        FINISHED: { label: 'Capsule concluída', title: 'Uma aula<br /><span class="blue">que transforma.</span>', copy: 'A sessão terminou. A policy foi limpa e o runtime local pode sincronizar os eventos mínimos.' }
+      };
+
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const setCopy = (phase) => {
+        const content = phaseContent[phase] || phaseContent.IDLE;
+        phaseLabel.textContent = content.label;
+        phaseTitle.innerHTML = content.title;
+        phaseCopy.textContent = content.copy;
+      };
+
+      const animatePhase = (phase, running) => {
+        const content = phaseContent[phase] || phaseContent.IDLE;
+        if (reduceMotion || !gsapMotion) {
+          setCopy(phase);
+        } else {
+          gsapMotion.timeline()
+            .to([phaseTitle, phaseCopy, phaseLabel], { opacity: 0, y: 8, duration: .14, stagger: .02 })
+            .add(() => setCopy(phase))
+            .fromTo([phaseTitle, phaseCopy, phaseLabel], { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: .34, stagger: .05, ease: 'power2.out' });
+        }
+
+        const activeIndex = phaseIndex[phase] ?? -1;
+        steps.forEach((step, index) => {
+          step.classList.toggle('active', index === activeIndex);
+          step.classList.toggle('done', activeIndex >= 0 && index < activeIndex);
+        });
+        const activePhone = phase === 'MEASURE' ? 'MEASURE' : 'UNDERSTAND';
+        phones.forEach((phone) => phone.classList.toggle('active', phone.dataset.phone === activePhone));
+        if (!reduceMotion && gsapMotion) {
+          gsapMotion.fromTo('.phone-column.active .phone-frame', { y: 18, scale: .94 }, { y: 0, scale: 1, duration: .45, ease: 'power3.out' });
+        }
+        status.innerHTML = running
+          ? `<strong>Sessão activa · ${phase}</strong>O professor pode avançar a Capsule pela próxima fase.`
+          : phase === 'FINISHED'
+            ? '<strong>Sessão terminada · policy limpa</strong>O runtime local fechou a aula.'
+            : '<strong>Sem sessão</strong>O professor inicia a Capsule para começar.';
+        next.disabled = !running || phase === 'REFLECT';
+        end.disabled = !running;
+        start.disabled = running;
+      };
+
+      let current = 'IDLE';
       const realtimeUrl = location.protocol === 'file:'
         ? 'ws://localhost:8787/realtime'
         : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/realtime`;
       const socket = new WebSocket(realtimeUrl);
-      socket.onerror = () => { status.textContent = 'Servidor indisponível · execute npm start'; };
-      let current = 'IDLE';
-      const write = (line) => log.textContent = `${line}\n${log.textContent}`.slice(0, 1800);
-      const render = (value, running) => { current = value; phase.textContent = value; status.textContent = running ? 'Sessão activa' : 'Sem sessão'; next.disabled = !running || value === 'REFLECT'; end.disabled = !running; };
+
+      socket.onopen = () => {
+        lesson.textContent = 'Ligado ao runtime · pronto para demonstrar a Capsule.';
+      };
+      socket.onerror = () => {
+        lesson.textContent = 'Servidor indisponível · execute npm start para iniciar a demonstração.';
+        status.innerHTML = '<strong>Sem ligação ao runtime</strong>O painel precisa do servidor local Morph.';
+      };
       socket.onmessage = (event) => {
         const message = JSON.parse(event.data);
-        if (message.type === 'capsule:assigned') { lesson.textContent = `${message.capsule.lesson.subject} · ${message.capsule.lesson.topic} · ${message.capsule.lesson.durationMinutes} min`; write('Capsule recebida'); }
-        if (message.type === 'session:state') render(message.phase, message.running);
-        if (message.type === 'session:started') { render(message.phase.id, true); write('Session started'); }
-        if (message.type === 'phase:changed') { render(message.phase.id, true); write(`phase:changed → ${message.phase.id}`); }
-        if (message.type === 'session:ended') { render('FINISHED', false); write('Session ended · policy cleanup requested'); }
-        if (message.type === 'device:status') { write(`device:status → ${message.status.phase || 'idle'} · ${message.status.connectivity}`); }
+        if (message.type === 'capsule:assigned') {
+          lesson.textContent = `${message.capsule.lesson.subject} · ${message.capsule.lesson.topic} · ${message.capsule.lesson.durationMinutes} min`;
+        }
+        if (message.type === 'session:state') {
+          current = message.phase;
+          animatePhase(current, message.running);
+        }
+        if (message.type === 'session:started') {
+          current = message.phase.type;
+          animatePhase(current, true);
+        }
+        if (message.type === 'phase:changed') {
+          current = message.phase.type;
+          animatePhase(current, true);
+        }
+        if (message.type === 'session:ended') {
+          current = 'FINISHED';
+          animatePhase(current, false);
+        }
       };
+
       start.onclick = () => socket.send(JSON.stringify({ type: 'teacher:start' }));
       next.onclick = () => socket.send(JSON.stringify({ type: 'teacher:next' }));
       end.onclick = () => socket.send(JSON.stringify({ type: 'teacher:end' }));
+      animatePhase('IDLE', false);
     </script>
   </body>
 </html>
