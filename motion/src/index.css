@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; overflow: hidden; background: #fff; }
+.grid-paper, .transform-grid { position: absolute; inset: 0; opacity: .42; background-image: linear-gradient(rgba(24,57,103,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(24,57,103,.035) 1px, transparent 1px); background-size: 44px 44px; }
+.brand-topline, .brand-footer, .transform-meta, .transform-footer, .end-tag { position: absolute; color: #1d3761; font-size: 16px; font-weight: 700; letter-spacing: .24em; }
+.brand-topline { top: 65px; right: 82px; }
+.brand-topline span, .brand-footer span, .transform-meta span, .transform-footer span, .end-tag span { color: #2875ea; margin: 0 12px; }
+.brand-copy { position: absolute; left: 118px; top: 164px; width: 880px; }
+.lockup { width: 340px; height: 128px; object-fit: contain; object-position: left center; mix-blend-mode: multiply; }
+.eyebrow { color: #2973e6; font-size: 17px; font-weight: 800; letter-spacing: .22em; }
+.brand-copy h1 { margin: 38px 0 24px; color: #10274d; font-size: 76px; line-height: .98; letter-spacing: -.055em; font-weight: 800; }
+em { color: #2475ea; font-style: normal; }
+.brand-copy p { color: #677a99; font-size: 28px; letter-spacing: -.02em; }
+.brand-phone-wrap { position: absolute; top: 155px; right: 210px; width: 470px; text-align: center; }
+.phone-halo { position: absolute; left: 32px; top: 20px; width: 400px; height: 650px; border-radius: 50%; background: radial-gradient(circle, rgba(41,117,234,.14) 0, rgba(56,212,169,.08) 38%, transparent 70%); }
+.hero-phone { position: relative; width: 330px; height: 710px; object-fit: contain; filter: drop-shadow(0 34px 28px rgba(17,38,74,.2)); }
+.phone-caption { margin-top: -12px; color: #153463; font-size: 15px; font-weight: 800; letter-spacing: .18em; }
+.phone-caption span { color: #2973e6; margin-right: 14px; }
+.brand-footer { left: 118px; bottom: 64px; font-size: 14px; }
+.transform-header { position: absolute; top: 54px; left: 80px; right: 80px; display: flex; align-items: center; justify-content: space-between; }
+.transform-lockup { width: 250px; height: 94px; object-fit: contain; object-position: left center; mix-blend-mode: multiply; }
+.transform-meta { position: static; font-size: 14px; }
+.transform-main { position: absolute; inset: 190px 170px 150px; display: flex; align-items: center; justify-content: space-between; }
+.transform-copy { width: 920px; }
+.transform-copy h2 { margin: 30px 0 24px; color: #10274d; font-size: 74px; line-height: .99; letter-spacing: -.06em; }
+.transform-copy p { width: 660px; margin: 0 0 65px; color: #6d7d96; font-size: 28px; line-height: 1.25; }
+.stage-detail { display: grid; gap: 10px; width: 560px; padding-left: 22px; border-left: 4px solid #2b77eb; color: #173563; }
+.stage-detail strong { font-size: 18px; letter-spacing: .16em; }
+.stage-detail span { color: #697c99; font-size: 22px; line-height: 1.25; }
+.transform-device { position: relative; width: 430px; height: 760px; display: flex; justify-content: center; align-items: center; }
+.device-shadow { position: absolute; width: 330px; height: 690px; border-radius: 50%; background: radial-gradient(ellipse, rgba(33,83,150,.19), transparent 68%); }
+.transform-phone { position: relative; width: 390px; height: 730px; object-fit: contain; filter: drop-shadow(0 30px 26px rgba(10,28,58,.18)); }
+.transform-rail { position: absolute; left: 170px; right: 170px; bottom: 91px; display: flex; gap: 74px; align-items: center; border-top: 1px solid #d9e1ef; padding-top: 22px; }
+.rail-item { display: flex; gap: 14px; align-items: center; color: #a2b0c5; font-size: 15px; font-weight: 800; letter-spacing: .16em; }
+.rail-item.active { color: #1d4e99; }
+.rail-number { display: grid; place-items: center; width: 33px; height: 33px; border: 1px solid currentColor; border-radius: 50%; font-size: 12px; }
+.rail-item.active .rail-number { color: white; background: #2875ea; border-color: #2875ea; }
+.transform-footer { left: 80px; bottom: 42px; font-size: 12px; }
+.end-scene { align-items: center; justify-content: center; background: #10274d; color: white; font-family: Arial, Helvetica, sans-serif; text-align: center; }
+.end-rule { width: 76px; height: 5px; margin-bottom: 40px; background: linear-gradient(90deg, #5a20e9, #1ecaa0); }
+.end-lockup { width: 300px; height: 112px; object-fit: contain; filter: invert(1); mix-blend-mode: screen; margin-bottom: 25px; }
+.end-scene h2 { margin: 0; font-size: 76px; line-height: .98; letter-spacing: -.055em; }
+.end-scene p { margin-top: 28px; color: #b9c8df; font-size: 25px; }
+.end-tag { bottom: 64px; color: #b9c8df; font-size: 13px; }

@@ -6,18 +6,22 @@ import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,6 +46,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -50,6 +57,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -60,6 +68,8 @@ import com.morph.runtime.domain.Capability
 import com.morph.runtime.domain.Connectivity
 import com.morph.runtime.domain.PhaseType
 import com.morph.runtime.domain.RuntimeStage
+import kotlin.math.cos
+import kotlin.math.sin
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -86,52 +96,213 @@ private fun MorphScreen(app: MorphApplication) {
     val samples by app.accelerometer.samples.collectAsState()
     val magnitude by app.accelerometer.magnitude.collectAsState()
     val phase = runtime.currentPhase
+    var splashVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(runtime.running, phase?.type) {
         if (runtime.running && phase?.type == PhaseType.MEASURE) app.accelerometer.start() else app.accelerometer.stop()
     }
     DisposableEffect(Unit) { onDispose { app.accelerometer.stop() } }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = Paper) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Paper) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                BrandHeader()
+                RuntimeStrip(runtime.connectivity, runtime.running)
+                TextButton(
+                    onClick = { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+                    modifier = Modifier.align(Alignment.Start)
+                ) {
+                    Icon(Icons.Outlined.Settings, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Abrir permissões de protecção", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                AnimatedContent(targetState = runtime.stage, label = "runtime-stage") { stage ->
+                    when (stage) {
+                        RuntimeStage.IDLE,
+                        RuntimeStage.CAPSULE_RECEIVED,
+                        RuntimeStage.READY -> WelcomeState(runtime.status)
+                        RuntimeStage.UNDERSTAND -> UnderstandState(phase?.title ?: "Compreender")
+                        RuntimeStage.MEASURE -> MeasureState(samples, magnitude)
+                        RuntimeStage.ANALYSE,
+                        RuntimeStage.REFLECT -> ActivePhaseState(stage, phase?.title ?: stage.name, phase?.capabilities ?: emptySet())
+                        RuntimeStage.FINISHED -> FinishedState()
+                    }
+                }
+
+                Text(
+                    "A Capsule muda o que o smartphone pode fazer em cada etapa.",
+                    color = Muted,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                FooterMark()
+            }
+        }
+
+        if (splashVisible) {
+            MorphTransformationSplash(
+                selected = splashModeFor(phase?.type),
+                onFinished = { splashVisible = false }
+            )
+        }
+    }
+}
+
+private enum class SplashMode(val title: String, val icon: ImageVector, val tint: Color) {
+    UNDERSTAND("COMPREENDER", Icons.Outlined.MenuBook, Color(0xFF2875EA)),
+    SHIELD("MORPH SHIELD", Icons.Outlined.Eco, Color(0xFF27B878)),
+    MEASURE("MEDIR", Icons.Outlined.BarChart, Color(0xFF1F6BFF))
+}
+
+private fun splashModeFor(phase: PhaseType?): SplashMode = when (phase) {
+    PhaseType.MEASURE,
+    PhaseType.ANALYSE -> SplashMode.MEASURE
+    PhaseType.REFLECT -> SplashMode.SHIELD
+    else -> SplashMode.UNDERSTAND
+}
+
+@Composable
+private fun MorphTransformationSplash(selected: SplashMode, onFinished: () -> Unit) {
+    val progress = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        progress.animateTo(
+            targetValue = 1f,
+            animationSpec = keyframes {
+                durationMillis = 3_400
+                0f at 0
+                .18f at 420
+                .54f at 1_500
+                .78f at 2_450
+                1f at 3_400
+            }
+        )
+        onFinished()
+    }
+
+    val value = progress.value
+    val orbitProgress = ((value - .05f) / .55f).coerceIn(0f, 1f)
+    val convergeProgress = ((value - .47f) / .38f).coerceIn(0f, 1f)
+    val closeProgress = ((value - .82f) / .18f).coerceIn(0f, 1f)
+    val titleAlpha = ((value - .03f) / .16f).coerceIn(0f, 1f) * (1f - closeProgress)
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Paper),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val radius = size.minDimension * (.3f - convergeProgress * .18f)
+            drawCircle(BorderBlue.copy(alpha = .62f * (1f - convergeProgress)), radius, center, style = Stroke(width = 1.5f))
+            drawCircle(BorderBlue.copy(alpha = .34f * (1f - convergeProgress)), radius * .72f, center, style = Stroke(width = 1f))
+            repeat(3) { index ->
+                val angle = -Math.PI.toFloat() / 2f + index * (Math.PI.toFloat() * 2f / 3f) + orbitProgress * .95f
+                val point = Offset(center.x + cos(angle) * radius, center.y + sin(angle) * radius)
+                drawLine(BorderBlue.copy(alpha = .2f * (1f - convergeProgress)), center, point, strokeWidth = 1f)
+            }
+        }
+
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+                .align(Alignment.TopCenter)
+                .padding(top = 42.dp)
+                .graphicsLayer { alpha = titleAlpha },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
-            BrandHeader()
-            RuntimeStrip(runtime.connectivity, runtime.running)
-            TextButton(
-                onClick = { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
-                modifier = Modifier.align(Alignment.Start)
-            ) {
-                Icon(Icons.Outlined.Settings, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Abrir permissões de protecção", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            }
+            Image(painter = painterResource(R.drawable.morph_logo), contentDescription = "Morph", modifier = Modifier.width(148.dp).height(54.dp))
+            Text("AULA AO VIVO", color = PrimaryBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+        }
 
-            AnimatedContent(targetState = runtime.stage, label = "runtime-stage") { stage ->
-                when (stage) {
-                    RuntimeStage.IDLE,
-                    RuntimeStage.CAPSULE_RECEIVED,
-                    RuntimeStage.READY -> WelcomeState(runtime.status)
-                    RuntimeStage.UNDERSTAND -> UnderstandState(phase?.title ?: "Compreender")
-                    RuntimeStage.MEASURE -> MeasureState(samples, magnitude)
-                    RuntimeStage.ANALYSE,
-                    RuntimeStage.REFLECT -> ActivePhaseState(stage, phase?.title ?: stage.name, phase?.capabilities ?: emptySet())
-                    RuntimeStage.FINISHED -> FinishedState()
+        val orbitRadius = minOf(maxWidth.value, maxHeight.value) * .3f
+        SplashMode.values().forEachIndexed { index, mode ->
+            val angle = -Math.PI.toFloat() / 2f + index * (Math.PI.toFloat() * 2f / 3f) + orbitProgress * .95f
+            val selectedMode = mode == selected
+            val alpha = if (selectedMode) 1f else 1f - convergeProgress * .9f
+            val radius = orbitRadius * (1f - convergeProgress * .78f)
+            val x = cos(angle) * radius
+            val y = sin(angle) * radius
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(x.dp, y.dp)
+                    .graphicsLayer {
+                        this.alpha = alpha
+                        val scale = if (selectedMode) 1f + convergeProgress * .34f else 1f - convergeProgress * .14f
+                        scaleX = scale
+                        scaleY = scale
+                        rotationZ = orbitProgress * 360f + index * 4f
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(if (selectedMode) 70.dp else 60.dp)
+                            .background(Color.White, CircleShape)
+                            .border(2.dp, mode.tint, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(mode.icon, contentDescription = mode.title, tint = mode.tint, modifier = Modifier.size(28.dp))
+                    }
+                    Text(mode.title, color = mode.tint, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = .8.sp)
                 }
             }
+        }
 
-            Text(
-                "A Capsule muda o que o smartphone pode fazer em cada etapa.",
-                color = Muted,
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            FooterMark()
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .size(width = 148.dp, height = 274.dp)
+                .graphicsLayer {
+                    alpha = ((convergeProgress - .22f) / .56f).coerceIn(0f, 1f) * (1f - closeProgress)
+                    val scale = .84f + convergeProgress * .16f
+                    scaleX = scale
+                    scaleY = scale
+                }
+                .background(Color.White, RoundedCornerShape(28.dp))
+                .border(3.dp, Navy, RoundedCornerShape(28.dp))
+                .padding(13.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("9:41", color = Muted, fontSize = 6.sp, fontWeight = FontWeight.Bold)
+                    Text("5G · ▮", color = Muted, fontSize = 6.sp, fontWeight = FontWeight.Bold)
+                }
+                Icon(selected.icon, contentDescription = null, tint = selected.tint, modifier = Modifier.padding(top = 18.dp).size(34.dp))
+                Text(selected.title, color = Navy, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = .5.sp)
+                Box(modifier = Modifier.width(28.dp).height(3.dp).background(PrimaryBlue))
+                Text("A ferramenta certa\npara esta fase.", color = Muted, fontSize = 10.sp, lineHeight = 13.sp)
+                Box(modifier = Modifier.fillMaxWidth().height(58.dp).background(LightBlue, RoundedCornerShape(10.dp)).padding(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(if (selected == SplashMode.MEASURE) "Dados do movimento" else "Conteúdo da aula", color = Navy, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                        repeat(3) { Box(modifier = Modifier.fillMaxWidth(if (it == 1) .72f else .9f).height(4.dp).background(BorderBlue, RoundedCornerShape(3.dp))) }
+                    }
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 42.dp)
+                .graphicsLayer { alpha = titleAlpha },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Text("O smartphone metamorfoseia-se", color = Navy, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text("conforme a aprendizagem", color = Muted, fontSize = 13.sp)
         }
     }
 }
@@ -250,12 +421,46 @@ private fun ActivePhaseState(stage: RuntimeStage, title: String, capabilities: S
             Text(if (isReflect) "O que concluis?" else "Padrão de movimento", color = Navy, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Text(if (isReflect) "Regista a tua ideia principal e fecha o ciclo da experiência." else "A Capsule prepara os dados recolhidos para apoiar a tua leitura.", color = Muted, fontSize = 15.sp, lineHeight = 21.sp)
+            if (!isReflect) {
+                Spacer(Modifier.height(6.dp))
+                AnalysisSummary()
+            }
             if (capabilities.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 CapabilityLine(capabilities)
             }
         }
         PhaseProgress(active = if (isReflect) 3 else 2)
+    }
+}
+
+@Composable
+private fun AnalysisSummary() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(LightBlue, RoundedCornerShape(18.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("RESUMO LOCAL", color = PrimaryBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+        Text("Padrão de movimento", color = Navy, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        Text("Os dados recolhidos estão prontos para interpretar.", color = Muted, fontSize = 12.sp)
+        Canvas(modifier = Modifier.fillMaxWidth().height(76.dp)) {
+            val values = listOf(.28f, .48f, .4f, .72f, .9f, .64f)
+            val gap = 8.dp.toPx()
+            val barWidth = (size.width - gap * (values.size - 1)) / values.size
+            values.forEachIndexed { index, value ->
+                val left = index * (barWidth + gap)
+                drawRoundRect(
+                    color = PrimaryBlue,
+                    topLeft = Offset(left, size.height * (1f - value)),
+                    size = androidx.compose.ui.geometry.Size(barWidth, size.height * value),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx())
+                )
+            }
+        }
+        Text("Média: 1,2 m/s²   ·   Pico: 2,4 m/s²", color = Navy, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
