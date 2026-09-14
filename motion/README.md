@@ -35,6 +35,15 @@ npx remotion render MorphTransformation artifacts/morph-transformation.mp4 --cod
 
 O MP4 renderizado fica em `artifacts/morph-transformation.mp4` e a cópia usada pelo Teacher Studio em `../web/public/media/morph-transformation.mp4`.
 
+Os dois splashs finais são renderizados com copy determinística:
+
+```console
+npx remotion still MorphSplashPortalFinal artifacts/morph-splash-portal-final.png
+npx remotion still MorphSplashProofFinal artifacts/morph-splash-proof-final.png
+```
+
+`PortalFinal` é a abertura; `ProofFinal` é a transição tecnológica Shield → acelerómetro.
+
 **Upgrade Remotion**
 
 ```console
