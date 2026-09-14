@@ -3,63 +3,522 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
     <title>Morph · Teacher Control</title>
     <style>
-      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #111318; color: #f5f6f8; }
-      body { max-width: 720px; margin: 0 auto; padding: 40px 22px; }
-      .eyebrow { color: #9da7b9; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
-      h1 { font-size: clamp(34px, 8vw, 58px); line-height: .98; margin: 14px 0 10px; }
-      p { color: #aeb6c4; }
-      .card { border: 1px solid #2d3440; border-radius: 18px; padding: 20px; margin-top: 26px; background: #181b22; }
-      .phase { font-size: 26px; font-weight: 700; margin: 8px 0; }
-      .meta { color: #98a4b8; font-size: 14px; }
-      button { border: 0; border-radius: 999px; padding: 12px 18px; margin: 8px 8px 0 0; font-weight: 700; cursor: pointer; background: #d7ff63; color: #10130c; }
-      button.secondary { background: #2c3443; color: #f5f6f8; }
-      button:disabled { opacity: .4; cursor: not-allowed; }
-      #log { white-space: pre-wrap; color: #8491a6; font: 12px ui-monospace, monospace; margin-top: 20px; }
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #14254d;
+        background: #f8fbff;
+        font-synthesis: none;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; background: #f8fbff; }
+      button { font: inherit; }
+      .page { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 30px 0 42px; }
+      .topbar { display: flex; align-items: flex-start; gap: 24px; }
+      .brand { width: 196px; height: auto; display: block; }
+      .topbar-spacer { flex: 1; }
+      .event-mark { text-align: right; color: #14254d; font-size: 11px; font-weight: 800; letter-spacing: .2em; }
+      .event-line { width: 38px; height: 4px; margin: 12px 0 0 auto; background: #1f6bff; }
+      .teacher-nav { display: flex; gap: 8px; margin-top: 28px; padding-bottom: 14px; border-bottom: 1px solid #d6e5f7; }
+      .nav-button { padding: 9px 13px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #627493; font-size: 12px; }
+      .nav-button:hover:not(:disabled) { color: #1f6bff; background: #eaf3ff; box-shadow: none; transform: none; }
+      .nav-button.active { border-color: #bcd7fa; background: #eaf3ff; color: #1f6bff; }
+      [hidden] { display: none !important; }
+
+      .eyebrow { margin-top: 48px; color: #1f6bff; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+      h1 { max-width: 760px; margin: 18px 0 12px; font-size: clamp(42px, 7vw, 78px); line-height: .98; letter-spacing: -.055em; }
+      h1 .accent { color: #1f6bff; }
+      .lede { max-width: 650px; margin: 0; color: #627493; font-size: clamp(18px, 2.4vw, 25px); line-height: 1.3; }
+
+      .workspace { position: relative; margin-top: 46px; padding: 28px; overflow: hidden; border: 1px solid #d6e5f7; border-radius: 26px; background: #fff; box-shadow: 0 16px 48px rgba(20, 37, 77, .08); }
+      .workspace::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: #1f6bff; }
+      .workspace-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+      .workspace-title { margin: 0; font-size: 31px; line-height: 1.05; letter-spacing: -.035em; }
+      .lesson { max-width: 340px; color: #627493; font-size: 13px; line-height: 1.35; text-align: right; }
+
+      .phase-rail { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin: 38px 0 30px; }
+      .phase-step { position: relative; min-width: 0; }
+      .phase-step::after { content: ""; position: absolute; top: 18px; left: 38px; right: -18px; height: 2px; background: #d6e5f7; }
+      .phase-step:last-child::after { display: none; }
+      .phase-dot { position: relative; z-index: 1; display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: #eaf3ff; color: #627493; font-size: 13px; font-weight: 800; transition: background .25s ease, color .25s ease, transform .25s ease; }
+      .phase-step.active .phase-dot { background: #1f6bff; color: #fff; }
+      .phase-step.done .phase-dot { background: #dceaff; color: #1f6bff; }
+      .phase-name { display: block; margin-top: 11px; color: #14254d; font-size: 13px; font-weight: 800; }
+      .phase-description { display: block; margin-top: 5px; color: #627493; font-size: 12px; line-height: 1.3; }
+
+      .demo-layout { display: grid; grid-template-columns: minmax(250px, .8fr) minmax(440px, 1.2fr); gap: 36px; align-items: center; }
+      .demo-copy { padding: 10px 0 10px 8px; }
+      .demo-copy h2 { margin: 0 0 12px; font-size: clamp(29px, 4vw, 45px); line-height: 1.02; letter-spacing: -.045em; }
+      .demo-copy h2 .blue { color: #1f6bff; }
+      .demo-copy p { margin: 0; color: #627493; font-size: 17px; line-height: 1.4; }
+      .blue-rule { width: 48px; height: 4px; margin: 22px 0; background: #1f6bff; }
+      .live-label { display: flex; align-items: center; gap: 8px; color: #1f6bff; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+      .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #2ebb80; box-shadow: 0 0 0 5px #e4f8ef; }
+
+      .phone-stage { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: end; min-height: 480px; }
+      .phone-column { min-width: 0; text-align: center; }
+      .phone-label { min-height: 42px; margin-bottom: 10px; color: #14254d; font-size: 13px; font-weight: 800; line-height: 1.25; }
+      .phone-frame { position: relative; width: 100%; aspect-ratio: 9 / 18.7; overflow: hidden; border: 7px solid #14254d; border-radius: 28px; background: #fff; box-shadow: 0 15px 25px rgba(20, 37, 77, .17); transform: translateY(8px) scale(.96); opacity: .54; transition: opacity .35s ease, transform .35s ease, box-shadow .35s ease; }
+      .phone-frame::after { content: ""; position: absolute; top: 7px; left: 50%; width: 56px; height: 14px; border-radius: 10px; background: #14254d; transform: translateX(-50%); opacity: .94; }
+      .phone-frame img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+      .phone-column.active .phone-frame { transform: translateY(0) scale(1); opacity: 1; box-shadow: 0 24px 36px rgba(31, 107, 255, .2); }
+      .phone-column.active .phone-label { color: #1f6bff; }
+
+      .control-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 30px; padding-top: 22px; border-top: 1px solid #d6e5f7; }
+      .control-status { flex: 1; min-width: 180px; color: #627493; font-size: 13px; }
+      .control-status strong { display: block; margin-bottom: 3px; color: #14254d; font-size: 15px; }
+      button { border: 0; border-radius: 10px; padding: 13px 18px; cursor: pointer; font-size: 13px; font-weight: 800; transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease; }
+      button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 18px rgba(31, 107, 255, .18); }
+      button:disabled { cursor: not-allowed; opacity: .42; }
+      .primary { background: #1f6bff; color: #fff; }
+      .secondary { background: #eaf3ff; color: #1f6bff; }
+      .neutral { background: #14254d; color: #fff; }
+
+      .proof-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 28px; }
+      .proof-item { padding-top: 18px; border-top: 2px solid #d6e5f7; }
+      .proof-item h3 { margin: 0 0 7px; color: #14254d; font-size: 16px; }
+      .proof-item p { margin: 0; color: #627493; font-size: 13px; line-height: 1.4; }
+      .footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 42px; color: #627493; font-size: 10px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+
+      .teacher-view { margin-top: 46px; }
+      .view-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+      .view-heading h2 { max-width: 700px; margin: 10px 0 8px; font-size: clamp(32px, 5vw, 56px); line-height: .98; letter-spacing: -.05em; }
+      .view-heading p { max-width: 630px; margin: 0; color: #627493; font-size: 17px; line-height: 1.4; }
+      .view-kicker { color: #1f6bff; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+      .save-state { display: flex; align-items: center; gap: 8px; min-width: 185px; padding: 12px 14px; border: 1px solid #d6e5f7; border-radius: 12px; color: #627493; font-size: 12px; }
+      .save-state-dot { width: 8px; height: 8px; border-radius: 50%; background: #2ebb80; box-shadow: 0 0 0 5px #e4f8ef; }
+      .prepare-grid { display: grid; grid-template-columns: minmax(300px, .84fr) minmax(440px, 1.16fr); gap: 22px; }
+      .editor-panel, .preview-panel, .summary-card { border: 1px solid #d6e5f7; border-radius: 22px; background: #fff; box-shadow: 0 12px 30px rgba(20, 37, 77, .05); }
+      .editor-panel { padding: 24px; }
+      .preview-panel { padding: 24px; }
+      .panel-kicker { color: #627493; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+      .form-row { display: grid; grid-template-columns: 1fr 1.25fr; gap: 12px; }
+      .field { display: grid; gap: 7px; margin-top: 18px; }
+      .field label { color: #14254d; font-size: 12px; font-weight: 800; }
+      .field input, .field textarea { width: 100%; border: 1px solid #bcd7fa; border-radius: 10px; outline: none; background: #f8fbff; color: #14254d; font: inherit; font-size: 14px; padding: 12px 13px; }
+      .field textarea { min-height: 100px; resize: vertical; line-height: 1.4; }
+      .field input:focus, .field textarea:focus { border-color: #1f6bff; box-shadow: 0 0 0 3px rgba(31, 107, 255, .12); }
+      .privacy-note { display: grid; grid-template-columns: auto 1fr; gap: 12px; margin-top: 20px; padding: 14px; border-radius: 14px; background: #eaf3ff; }
+      .privacy-note strong { display: block; color: #14254d; font-size: 13px; }
+      .privacy-note span { display: block; margin-top: 3px; color: #627493; font-size: 12px; line-height: 1.35; }
+      .privacy-icon { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: #1f6bff; color: #fff; font-weight: 900; }
+      .editor-actions { display: flex; align-items: center; gap: 12px; margin-top: 22px; }
+      .form-feedback { min-height: 18px; color: #627493; font-size: 12px; }
+      .preview-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+      .capsule-badge { padding: 7px 10px; border-radius: 999px; background: #eaf3ff; color: #1f6bff; font-size: 10px; font-weight: 800; letter-spacing: .11em; }
+      .preview-title { margin: 8px 0 4px; color: #14254d; font-size: 25px; line-height: 1.05; }
+      .preview-objective { margin: 0; color: #627493; font-size: 13px; line-height: 1.35; }
+      .phase-editor-list { display: grid; gap: 10px; margin-top: 22px; }
+      .phase-editor { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; width: 100%; padding: 13px; border: 1px solid #d6e5f7; border-radius: 14px; background: #fff; color: inherit; text-align: left; cursor: pointer; transition: border-color .2s ease, background .2s ease, transform .2s ease; }
+      .phase-editor:hover { border-color: #bcd7fa; transform: translateY(-1px); }
+      .phase-editor.selected { border-color: #1f6bff; background: #f8fbff; }
+      .phase-editor-index { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #eaf3ff; color: #1f6bff; font-size: 12px; font-weight: 800; }
+      .phase-editor.selected .phase-editor-index { background: #1f6bff; color: #fff; }
+      .phase-editor strong { display: block; color: #14254d; font-size: 14px; }
+      .phase-editor small { display: block; margin-top: 3px; color: #627493; font-size: 11px; }
+      .phase-duration { color: #627493; font-size: 11px; font-weight: 800; white-space: nowrap; }
+      .selected-phase { margin-top: 16px; padding: 14px; border-left: 3px solid #1f6bff; background: #f8fbff; color: #627493; font-size: 12px; line-height: 1.4; }
+      .selected-phase strong { color: #14254d; }
+      .live-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 0 0 18px; }
+      .live-metric { padding: 15px 16px; border-top: 2px solid #bcd7fa; background: #fff; }
+      .live-metric strong { display: block; margin-top: 6px; color: #14254d; font-size: 18px; }
+      .live-metric span { color: #627493; font-size: 11px; }
+      .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      .summary-card { padding: 24px; }
+      .summary-card h3 { margin: 9px 0 7px; color: #14254d; font-size: 23px; }
+      .summary-card p { margin: 0; color: #627493; font-size: 14px; line-height: 1.45; }
+      .summary-number { color: #1f6bff; font-size: 45px; font-weight: 800; letter-spacing: -.05em; }
+      .summary-timeline { display: grid; gap: 12px; margin-top: 20px; }
+      .timeline-row { display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: center; color: #627493; font-size: 12px; }
+      .timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: #1f6bff; }
+      .timeline-row strong { color: #14254d; }
+
+      @media (max-width: 840px) {
+        .page { width: min(100% - 30px, 680px); padding-top: 22px; }
+        .workspace { padding: 20px; }
+        .demo-layout { grid-template-columns: 1fr; gap: 24px; }
+        .demo-copy { padding-left: 0; }
+        .phone-stage { min-height: 390px; }
+        .prepare-grid, .summary-grid { grid-template-columns: 1fr; }
+        .view-heading { display: block; }
+        .save-state { margin-top: 18px; }
+      }
+      @media (max-width: 560px) {
+        .brand { width: 150px; }
+        .event-mark { font-size: 8px; }
+        .eyebrow { margin-top: 34px; font-size: 10px; }
+        .phase-rail { gap: 6px; }
+        .phase-step::after { left: 31px; right: -7px; }
+        .phase-dot { width: 30px; height: 30px; font-size: 11px; }
+        .phase-step::after { top: 15px; }
+        .phase-name { font-size: 10px; }
+        .phase-description { display: none; }
+        .phone-stage { gap: 8px; min-height: 300px; }
+        .phone-frame { border-width: 4px; border-radius: 18px; }
+        .phone-frame::after { top: 4px; width: 35px; height: 8px; }
+        .phone-label { min-height: 33px; font-size: 10px; }
+        .proof-grid { grid-template-columns: 1fr; }
+        .footer { flex-direction: column; }
+        .teacher-nav { overflow-x: auto; }
+        .teacher-nav .nav-button { white-space: nowrap; }
+        .form-row, .live-metrics { grid-template-columns: 1fr; }
+        .editor-panel, .preview-panel, .summary-card { padding: 18px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+      }
     </style>
   </head>
   <body>
-    <div class="eyebrow">Morph · Executable Learning Capsule</div>
-    <h1>Teacher control</h1>
-    <p>O professor muda a intenção pedagógica. O smartphone muda de função.</p>
-    <section class="card">
-      <div class="meta" id="lesson">A ligar…</div>
-      <div class="phase" id="phase">—</div>
-      <div class="meta" id="status">Sem sessão</div>
-      <button id="start">Start capsule</button>
-      <button class="secondary" id="next" disabled>Next phase</button>
-      <button class="secondary" id="end" disabled>End session</button>
-      <div id="log"></div>
-    </section>
+    <main class="page">
+      <header class="topbar">
+        <img class="brand" src="/assets/morph-logo.jpg" alt="Morph · Aulas que transformam" />
+        <div class="topbar-spacer"></div>
+        <div class="event-mark">HACKTUDO 2026<div class="event-line"></div></div>
+      </header>
+
+      <nav class="teacher-nav" aria-label="Percurso do professor">
+        <button class="nav-button active" data-view="prepare">Preparar aula</button>
+        <button class="nav-button" data-view="live">Aula em directo</button>
+        <button class="nav-button" data-view="summary">Resumo</button>
+      </nav>
+
+      <div class="eyebrow">Uma nova relação com o smartphone</div>
+      <h1>O smartphone <span class="accent">metamorfoseia-se</span> conforme a aprendizagem.</h1>
+      <p class="lede">Aulas que transformam. Uma ferramenta certa para cada fase.</p>
+
+      <section class="teacher-view" id="prepare-view" aria-labelledby="prepare-title">
+        <div class="view-heading">
+          <div>
+            <div class="view-kicker">01 · Preparar</div>
+            <h2 id="prepare-title">Da intenção pedagógica à Capsule.</h2>
+            <p>O professor define o que a turma precisa de aprender. O Morph traduz essa intenção numa sequência executável.</p>
+          </div>
+          <div class="save-state"><span class="save-state-dot"></span><span id="draft-state">Rascunho local · pronto</span></div>
+        </div>
+
+        <form class="prepare-grid" id="capsule-form">
+          <div class="editor-panel">
+            <div class="panel-kicker">Intenção da aula</div>
+            <div class="form-row">
+              <div class="field"><label for="subject">Disciplina</label><input id="subject" name="subject" value="Física" /></div>
+              <div class="field"><label for="topic">Tema</label><input id="topic" name="topic" value="Movimento acelerado" /></div>
+            </div>
+            <div class="field"><label for="objective">Objectivo pedagógico</label><textarea id="objective" name="objective">Compreender o movimento acelerado através de explicação, medição, análise e reflexão.</textarea></div>
+            <div class="privacy-note"><div class="privacy-icon">✓</div><div><strong>Política de confiança activa</strong><span>Offline-first para o conteúdo. Sentinel verifica a política, não observa o conteúdo pessoal.</span></div></div>
+            <div class="editor-actions"><button class="primary" type="submit" id="publish">Guardar Capsule</button><span class="form-feedback" id="form-feedback" aria-live="polite"></span></div>
+          </div>
+
+          <div class="preview-panel">
+            <div class="preview-head"><div><div class="panel-kicker">Pré-visualização</div><h3 class="preview-title" id="preview-title">Física · Movimento acelerado</h3><p class="preview-objective" id="preview-objective">Compreender o movimento acelerado através de explicação, medição, análise e reflexão.</p></div><span class="capsule-badge">CAPSULE V1</span></div>
+            <div class="phase-editor-list" id="phase-editor-list"></div>
+            <div class="selected-phase" id="selected-phase"><strong>Compreender</strong> · Explorar o fenómeno no contexto real e registar uma hipótese antes de medir.</div>
+          </div>
+        </form>
+      </section>
+
+      <section class="teacher-view" id="live-view" aria-labelledby="workspace-title" hidden>
+        <div class="live-metrics" aria-label="Estado da aula">
+          <div class="live-metric"><span>DISPOSITIVOS</span><strong id="device-count">01 ligado</strong></div>
+          <div class="live-metric"><span>EXECUÇÃO</span><strong id="execution-mode">Local-first</strong></div>
+          <div class="live-metric"><span>INTEGRIDADE</span><strong id="integrity-mode">Sentinel activo</strong></div>
+        </div>
+      <section class="workspace" aria-labelledby="workspace-title">
+        <div class="workspace-head">
+          <div>
+            <h2 class="workspace-title" id="workspace-title">A aula programa o smartphone.</h2>
+          </div>
+          <div class="lesson" id="lesson">A ligar ao runtime Morph…</div>
+        </div>
+
+        <div class="phase-rail" aria-label="Fases da Capsule">
+          <div class="phase-step active" data-step="UNDERSTAND"><span class="phase-dot">1</span><span class="phase-name">COMPREENDER</span><span class="phase-description">Conteúdo da aula</span></div>
+          <div class="phase-step" data-step="MEASURE"><span class="phase-dot">2</span><span class="phase-name">MEDIR</span><span class="phase-description">Dados do movimento</span></div>
+          <div class="phase-step" data-step="ANALYSE"><span class="phase-dot">3</span><span class="phase-name">ANALISAR</span><span class="phase-description">Padrões da experiência</span></div>
+          <div class="phase-step" data-step="REFLECT"><span class="phase-dot">4</span><span class="phase-name">REFLECTIR</span><span class="phase-description">Conclusões e acção</span></div>
+        </div>
+
+        <div class="demo-layout">
+          <div class="demo-copy">
+            <div class="live-label"><span class="live-dot"></span><span id="phase-label">A aguardar Capsule</span></div>
+            <div class="blue-rule"></div>
+            <h2 id="phase-title">O mesmo telefone.<br /><span class="blue">Mais possibilidades</span><br />para aprender.</h2>
+            <p id="phase-copy">O professor define a intenção. A Capsule prepara a capacidade certa para cada momento.</p>
+          </div>
+
+          <div class="phone-stage" aria-label="Ecrãs reais do Android runtime">
+            <div class="phone-column active" data-phone="UNDERSTAND">
+              <div class="phone-label">Compreender</div>
+              <div class="phone-frame"><img src="/assets/android/understand.png" alt="Android runtime · fase Compreender" /></div>
+            </div>
+            <div class="phone-column" data-phone="SHIELD">
+              <div class="phone-label">Morph Shield</div>
+              <div class="phone-frame"><img src="/assets/android/shield.png" alt="Android runtime · Morph Shield" /></div>
+            </div>
+            <div class="phone-column" data-phone="MEASURE">
+              <div class="phone-label">Medir</div>
+              <div class="phone-frame"><img src="/assets/android/measure.png" alt="Android runtime · acelerómetro real" /></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-bar">
+          <div class="control-status" id="status" aria-live="polite"><strong>Sem sessão</strong>O professor inicia a Capsule para começar.</div>
+          <button class="primary" id="start">Iniciar Capsule</button>
+          <button class="secondary" id="next" disabled>Próxima fase</button>
+          <button class="neutral" id="end" disabled>Terminar aula</button>
+        </div>
+      </section>
+      </section>
+
+      <section class="teacher-view" id="summary-view" aria-labelledby="summary-title" hidden>
+        <div class="view-heading">
+          <div>
+            <div class="view-kicker">03 · Depois da aula</div>
+            <h2 id="summary-title">A aula terminou. O que ficou?</h2>
+            <p>Uma leitura curta para o professor: aprendizagem com propósito, dados locais e uma política que se consegue explicar.</p>
+          </div>
+          <div class="save-state"><span class="save-state-dot"></span><span>Dados mínimos · locais</span></div>
+        </div>
+        <div class="summary-grid">
+          <article class="summary-card"><div class="panel-kicker">Resultado da sessão</div><div class="summary-number" id="summary-events">00</div><h3>eventos Sentinel</h3><p>Registos mínimos de integridade e conectividade, sincronizáveis depois da aula.</p></article>
+          <article class="summary-card"><div class="panel-kicker">Percurso concluído</div><div class="summary-number">04</div><h3>fases executadas</h3><p>Compreender → Medir → Analisar → Reflectir, com a capacidade certa em cada momento.</p><div class="summary-timeline"><div class="timeline-row"><span class="timeline-dot"></span><strong>Compreender</strong><span>conteúdo</span></div><div class="timeline-row"><span class="timeline-dot"></span><strong>Medir</strong><span>acelerómetro</span></div><div class="timeline-row"><span class="timeline-dot"></span><strong>Reflectir</strong><span>conclusão</span></div></div></article>
+        </div>
+      </section>
+
+      <section class="proof-grid" aria-label="O que a demonstração prova">
+        <article class="proof-item"><h3>Intenção pedagógica</h3><p>Uma aula traduzida em fases executáveis no dispositivo.</p></article>
+        <article class="proof-item"><h3>Capacidade real</h3><p>O telefone mede movimento com o acelerómetro local.</p></article>
+        <article class="proof-item"><h3>Política verificável</h3><p>O Shield protege o foco sem recolher conteúdo pessoal.</p></article>
+      </section>
+
+      <footer class="footer"><span>MORPH · PESSOAS · APRENDIZAGEM · POSSIBILIDADES</span><span>Teacher control · Runtime local</span></footer>
+    </main>
+
+    <script src="/vendor/gsap.min.js"></script>
     <script>
-      const phase = document.querySelector('#phase');
+      const phaseTitle = document.querySelector('#phase-title');
+      const phaseCopy = document.querySelector('#phase-copy');
+      const phaseLabel = document.querySelector('#phase-label');
       const status = document.querySelector('#status');
       const lesson = document.querySelector('#lesson');
-      const log = document.querySelector('#log');
       const start = document.querySelector('#start');
       const next = document.querySelector('#next');
       const end = document.querySelector('#end');
+      const steps = [...document.querySelectorAll('.phase-step')];
+      const phones = [...document.querySelectorAll('.phone-column')];
+      const gsapMotion = window.gsap;
+      const navButtons = [...document.querySelectorAll('.nav-button')];
+      const views = { prepare: document.querySelector('#prepare-view'), live: document.querySelector('#live-view'), summary: document.querySelector('#summary-view') };
+      const phaseEditorList = document.querySelector('#phase-editor-list');
+      const selectedPhase = document.querySelector('#selected-phase');
+      const subjectInput = document.querySelector('#subject');
+      const topicInput = document.querySelector('#topic');
+      const objectiveInput = document.querySelector('#objective');
+      const previewTitle = document.querySelector('#preview-title');
+      const previewObjective = document.querySelector('#preview-objective');
+      const formFeedback = document.querySelector('#form-feedback');
+      const draftState = document.querySelector('#draft-state');
+      const summaryEvents = document.querySelector('#summary-events');
+      const deviceCount = document.querySelector('#device-count');
+
+      const phaseDrafts = [
+        { id: 'UNDERSTAND', title: 'Compreender', subtitle: 'Contextualizar o desafio', duration: '05 min', capabilities: 'conteúdo · explicação', detail: 'Explorar o fenómeno no contexto real e registar uma hipótese antes de medir.' },
+        { id: 'MEASURE', title: 'Medir', subtitle: 'Recolher dados reais', duration: '10 min', capabilities: 'acelerómetro · cronómetro', detail: 'Usar os sensores do smartphone para transformar movimento em observação.' },
+        { id: 'ANALYSE', title: 'Analisar', subtitle: 'Interpretar e modelar', duration: '10 min', capabilities: 'gráfico · calculadora', detail: 'Tratar os dados recolhidos, encontrar padrões e apoiar a leitura do fenómeno.' },
+        { id: 'REFLECT', title: 'Reflectir', subtitle: 'Comunicar e agir', duration: '05 min', capabilities: 'exit ticket', detail: 'Comunicar conclusões, propor soluções e fechar o ciclo de aprendizagem.' }
+      ];
+      let selectedPhaseId = 'UNDERSTAND';
+      let currentView = 'prepare';
+
+      const setView = (view) => {
+        currentView = view;
+        Object.entries(views).forEach(([name, element]) => { element.hidden = name !== view; });
+        navButtons.forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+        if (!reduceMotion && gsapMotion) gsapMotion.fromTo(views[view], { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .28, ease: 'power2.out' });
+        if (view === 'summary') loadSummary();
+      };
+
+      const renderPhaseEditors = () => {
+        phaseEditorList.innerHTML = phaseDrafts.map((phase, index) => `<button class="phase-editor${phase.id === selectedPhaseId ? ' selected' : ''}" type="button" data-phase="${phase.id}"><span class="phase-editor-index">${index + 1}</span><span><strong>${phase.title}</strong><small>${phase.subtitle} · ${phase.capabilities}</small></span><span class="phase-duration">${phase.duration}</span></button>`).join('');
+        phaseEditorList.querySelectorAll('[data-phase]').forEach((button) => button.addEventListener('click', () => {
+          selectedPhaseId = button.dataset.phase;
+          const phase = phaseDrafts.find((item) => item.id === selectedPhaseId) || phaseDrafts[0];
+          selectedPhase.textContent = `${phase.title} · ${phase.detail}`;
+          renderPhaseEditors();
+        }));
+      };
+
+      const updateDraftPreview = () => {
+        previewTitle.textContent = `${subjectInput.value.trim() || 'Nova aula'} · ${topicInput.value.trim() || 'Sem tema'}`;
+        previewObjective.textContent = objectiveInput.value.trim() || 'Define um objectivo para esta aula.';
+      };
+
+      const buildCapsule = () => {
+        const subject = subjectInput.value.trim() || 'Física';
+        const topic = topicInput.value.trim() || 'Movimento acelerado';
+        const slug = `${subject}-${topic}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'morph-aula';
+        const phaseShape = [
+          ['UNDERSTAND', 300, ['LEARNING_CONTENT', 'GUIDED_EXPLANATION'], ['SOCIAL_APPS', 'MESSAGING']],
+          ['MEASURE', 600, ['ACCELEROMETER', 'CHRONOMETER'], ['SOCIAL_APPS', 'MESSAGING', 'UNRELATED_BROWSER']],
+          ['ANALYSE', 600, ['COLLECTED_DATA', 'GRAPH', 'CALCULATOR'], ['SOCIAL_APPS', 'MESSAGING']],
+          ['REFLECT', 300, ['EXIT_TICKET'], ['SOCIAL_APPS', 'MESSAGING']]
+        ];
+        return {
+          id: `${slug}-v1`, version: 1, objective: objectiveInput.value.trim() || 'Construir uma aprendizagem com propósito.',
+          lesson: { subject, topic, classId: '10A-FISICA', teacherId: 'teacher-demo', durationMinutes: 30 },
+          phases: phaseShape.map(([id, duration, capabilities, restrictions], index) => ({ id, duration, capabilities, restrictions, learning_assets: [{ id: `${slug}-${id.toLowerCase()}`, title: topic, kind: id === 'UNDERSTAND' ? 'TEXT' : id === 'ANALYSE' ? 'DATASET' : 'PROMPT', local: true }], transitions: { next: phaseShape[index + 1]?.[0] ?? null } })),
+          integrity_policy: { enabled: true, sentinel_events: ['RESTRICTED_ACCESS_ATTEMPT', 'CONNECTIVITY_CHANGED'], privacy: 'POLICY_INTEGRITY_ONLY' },
+          offline_policy: { enabled: true, assets: 'LOCAL_CACHE', events: 'LOCAL_QUEUE' },
+          valid_from: new Date().toISOString(), valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), signature: 'demo-signature-morph-teacher'
+        };
+      };
+
+      const loadSummary = async () => {
+        try {
+          const response = await fetch('/bridge/status', { cache: 'no-store' });
+          const data = await response.json();
+          summaryEvents.textContent = String(data.events?.length ?? 0).padStart(2, '0');
+          const count = data.devices?.length ?? 0;
+          deviceCount.textContent = `${String(count).padStart(2, '0')} ${count === 1 ? 'ligado' : 'ligados'}`;
+        } catch {
+          summaryEvents.textContent = '—';
+        }
+      };
+
+      navButtons.forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)));
+      [subjectInput, topicInput, objectiveInput].forEach((input) => input.addEventListener('input', updateDraftPreview));
+      document.querySelector('#capsule-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const capsule = buildCapsule();
+        const publish = document.querySelector('#publish');
+        publish.disabled = true;
+        formFeedback.textContent = 'A preparar a Capsule…';
+        try {
+          const response = await fetch('/bridge/capsule', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ capsule }) });
+          if (!response.ok) throw new Error('A Capsule não foi aceite pelo runtime.');
+          draftState.textContent = 'Guardado · pronto para iniciar';
+          formFeedback.textContent = 'Capsule guardada. A aula pode começar.';
+          current = 'READY';
+          animatePhase('READY', false);
+          setView('live');
+        } catch (error) {
+          formFeedback.textContent = error.message;
+        } finally {
+          publish.disabled = false;
+        }
+      });
+      renderPhaseEditors();
+      updateDraftPreview();
+
+      const phaseIndex = { UNDERSTAND: 0, MEASURE: 1, ANALYSE: 2, REFLECT: 3, FINISHED: -1 };
+      const phaseContent = {
+        IDLE: { label: 'A aguardar Capsule', title: 'O mesmo telefone.<br /><span class="blue">Mais possibilidades</span><br />para aprender.', copy: 'O professor define a intenção. A Capsule prepara a capacidade certa para cada momento.' },
+        READY: { label: 'Capsule pronta · A iniciar', title: 'Uma aula<br /><span class="blue">pronta para transformar.</span>', copy: 'A Capsule foi guardada. O professor pode iniciar a primeira fase quando a turma estiver pronta.' },
+        UNDERSTAND: { label: 'Capsule activa · Compreender', title: 'Conteúdo no<br /><span class="blue">momento certo.</span>', copy: 'A aula começa com contexto. O smartphone mantém o aluno dentro do fio da tarefa.' },
+        MEASURE: { label: 'Capsule activa · Medir', title: 'Dados reais<br /><span class="blue">da experiência.</span>', copy: 'O acelerómetro transforma o movimento do dispositivo numa observação que a turma pode interpretar.' },
+        ANALYSE: { label: 'Capsule activa · Analisar', title: 'Encontrar<br /><span class="blue">padrões.</span>', copy: 'A Capsule prepara os dados recolhidos para a leitura e a modelação do fenómeno.' },
+        REFLECT: { label: 'Capsule activa · Reflectir', title: 'Comunicar<br /><span class="blue">o que aprendemos.</span>', copy: 'A aula fecha o ciclo com uma conclusão e um próximo passo claro.' },
+        FINISHED: { label: 'Capsule concluída', title: 'Uma aula<br /><span class="blue">que transforma.</span>', copy: 'A sessão terminou. A policy foi limpa e o runtime local pode sincronizar os eventos mínimos.' }
+      };
+
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const setCopy = (phase) => {
+        const content = phaseContent[phase] || phaseContent.IDLE;
+        phaseLabel.textContent = content.label;
+        phaseTitle.innerHTML = content.title;
+        phaseCopy.textContent = content.copy;
+      };
+
+      const animatePhase = (phase, running) => {
+        const content = phaseContent[phase] || phaseContent.IDLE;
+        if (reduceMotion || !gsapMotion) {
+          setCopy(phase);
+        } else {
+          gsapMotion.timeline()
+            .to([phaseTitle, phaseCopy, phaseLabel], { opacity: 0, y: 8, duration: .14, stagger: .02 })
+            .add(() => setCopy(phase))
+            .fromTo([phaseTitle, phaseCopy, phaseLabel], { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: .34, stagger: .05, ease: 'power2.out' });
+        }
+
+        const activeIndex = phaseIndex[phase] ?? -1;
+        steps.forEach((step, index) => {
+          step.classList.toggle('active', index === activeIndex);
+          step.classList.toggle('done', activeIndex >= 0 && index < activeIndex);
+        });
+        const activePhone = phase === 'MEASURE' ? 'MEASURE' : 'UNDERSTAND';
+        phones.forEach((phone) => phone.classList.toggle('active', phone.dataset.phone === activePhone));
+        if (!reduceMotion && gsapMotion) {
+          gsapMotion.fromTo('.phone-column.active .phone-frame', { y: 18, scale: .94 }, { y: 0, scale: 1, duration: .45, ease: 'power3.out' });
+        }
+        status.innerHTML = phase === 'READY'
+          ? '<strong>Capsule pronta</strong>O professor pode iniciar a aula quando a turma estiver pronta.'
+          : running
+          ? `<strong>Sessão activa · ${phase}</strong>O professor pode avançar a Capsule pela próxima fase.`
+          : phase === 'FINISHED'
+            ? '<strong>Sessão terminada · policy limpa</strong>O runtime local fechou a aula.'
+            : '<strong>Sem sessão</strong>O professor inicia a Capsule para começar.';
+        next.disabled = !running || phase === 'REFLECT';
+        end.disabled = !running;
+        start.disabled = running;
+      };
+
+      let current = 'IDLE';
       const realtimeUrl = location.protocol === 'file:'
         ? 'ws://localhost:8787/realtime'
         : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/realtime`;
       const socket = new WebSocket(realtimeUrl);
-      socket.onerror = () => { status.textContent = 'Servidor indisponível · execute npm start'; };
-      let current = 'IDLE';
-      const write = (line) => log.textContent = `${line}\n${log.textContent}`.slice(0, 1800);
-      const render = (value, running) => { current = value; phase.textContent = value; status.textContent = running ? 'Sessão activa' : 'Sem sessão'; next.disabled = !running || value === 'REFLECT'; end.disabled = !running; };
+
+      socket.onopen = () => {
+        lesson.textContent = 'Ligado ao runtime · pronto para demonstrar a Capsule.';
+      };
+      socket.onerror = () => {
+        lesson.textContent = 'Servidor indisponível · execute npm start para iniciar a demonstração.';
+        status.innerHTML = '<strong>Sem ligação ao runtime</strong>O painel precisa do servidor local Morph.';
+      };
       socket.onmessage = (event) => {
         const message = JSON.parse(event.data);
-        if (message.type === 'capsule:assigned') { lesson.textContent = `${message.capsule.lesson.subject} · ${message.capsule.lesson.topic} · ${message.capsule.lesson.durationMinutes} min`; write('Capsule recebida'); }
-        if (message.type === 'session:state') render(message.phase, message.running);
-        if (message.type === 'session:started') { render(message.phase.id, true); write('Session started'); }
-        if (message.type === 'phase:changed') { render(message.phase.id, true); write(`phase:changed → ${message.phase.id}`); }
-        if (message.type === 'session:ended') { render('FINISHED', false); write('Session ended · policy cleanup requested'); }
-        if (message.type === 'device:status') { write(`device:status → ${message.status.phase || 'idle'} · ${message.status.connectivity}`); }
+        if (message.type === 'capsule:assigned') {
+          const metadata = message.capsule.lesson || {};
+          const totalMinutes = Math.round((message.capsule.phases || []).reduce((total, phase) => total + phase.duration, 0) / 60);
+          lesson.textContent = `${metadata.subject || 'Aula Morph'} · ${metadata.topic || message.capsule.objective} · ${metadata.durationMinutes || totalMinutes} min`;
+          subjectInput.value = metadata.subject || subjectInput.value;
+          topicInput.value = metadata.topic || topicInput.value;
+          objectiveInput.value = message.capsule.objective || objectiveInput.value;
+          updateDraftPreview();
+        }
+        if (message.type === 'session:state') {
+          current = message.phase;
+          animatePhase(current, message.running);
+          if (message.running) setView('live');
+        }
+        if (message.type === 'session:started') {
+          current = message.phase.type || message.phase.id;
+          animatePhase(current, true);
+          setView('live');
+        }
+        if (message.type === 'phase:changed') {
+          current = message.phase.type || message.phase.id;
+          animatePhase(current, true);
+          setView('live');
+        }
+        if (message.type === 'session:ended') {
+          current = 'FINISHED';
+          animatePhase(current, false);
+          setView('summary');
+        }
+        if (message.type === 'device:status') {
+          deviceCount.textContent = '01 ligado';
+        }
       };
-      start.onclick = () => socket.send(JSON.stringify({ type: 'teacher:start' }));
-      next.onclick = () => socket.send(JSON.stringify({ type: 'teacher:next' }));
+
+      start.onclick = () => { setView('live'); socket.send(JSON.stringify({ type: 'teacher:start' })); };
+      next.onclick = () => { setView('live'); socket.send(JSON.stringify({ type: 'teacher:next' })); };
       end.onclick = () => socket.send(JSON.stringify({ type: 'teacher:end' }));
+      animatePhase('IDLE', false);
     </script>
   </body>
 </html>

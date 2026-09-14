@@ -48,7 +48,7 @@ try {
   const initialHealth = await waitForHealth();
   const pageResponse = await fetch(baseUrl);
   const page = await pageResponse.text();
-  if (!pageResponse.ok || !page.includes('id="start"') || !page.includes('Teacher control')) {
+  if (!pageResponse.ok || !page.includes('id="start"') || !page.includes('id="capsule-form"') || !page.includes('id="summary-view"') || !page.includes('Teacher control')) {
     throw new Error("Public teacher page is not functional");
   }
   socket = new WebSocket(`ws://127.0.0.1:${port}/realtime`);

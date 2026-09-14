@@ -6,7 +6,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
 
-const port = 8789;
+const port = Number(process.env.MORPH_PERSISTENCE_PORT || 8789);
 const baseUrl = `http://127.0.0.1:${port}`;
 const stateDirectory = await mkdtemp(join(tmpdir(), "morph-session-"));
 const stateFile = join(stateDirectory, "state.json");
