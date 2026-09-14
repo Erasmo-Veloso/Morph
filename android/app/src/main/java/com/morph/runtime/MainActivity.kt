@@ -250,12 +250,46 @@ private fun ActivePhaseState(stage: RuntimeStage, title: String, capabilities: S
             Text(if (isReflect) "O que concluis?" else "Padrão de movimento", color = Navy, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Text(if (isReflect) "Regista a tua ideia principal e fecha o ciclo da experiência." else "A Capsule prepara os dados recolhidos para apoiar a tua leitura.", color = Muted, fontSize = 15.sp, lineHeight = 21.sp)
+            if (!isReflect) {
+                Spacer(Modifier.height(6.dp))
+                AnalysisSummary()
+            }
             if (capabilities.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 CapabilityLine(capabilities)
             }
         }
         PhaseProgress(active = if (isReflect) 3 else 2)
+    }
+}
+
+@Composable
+private fun AnalysisSummary() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(LightBlue, RoundedCornerShape(18.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("RESUMO LOCAL", color = PrimaryBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+        Text("Padrão de movimento", color = Navy, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        Text("Os dados recolhidos estão prontos para interpretar.", color = Muted, fontSize = 12.sp)
+        Canvas(modifier = Modifier.fillMaxWidth().height(76.dp)) {
+            val values = listOf(.28f, .48f, .4f, .72f, .9f, .64f)
+            val gap = 8.dp.toPx()
+            val barWidth = (size.width - gap * (values.size - 1)) / values.size
+            values.forEachIndexed { index, value ->
+                val left = index * (barWidth + gap)
+                drawRoundRect(
+                    color = PrimaryBlue,
+                    topLeft = Offset(left, size.height * (1f - value)),
+                    size = androidx.compose.ui.geometry.Size(barWidth, size.height * value),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx())
+                )
+            }
+        }
+        Text("Média: 1,2 m/s²   ·   Pico: 2,4 m/s²", color = Navy, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
