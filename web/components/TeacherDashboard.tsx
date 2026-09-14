@@ -295,9 +295,15 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
                 </div>
               </div>
             </div>
-            <aside className="intent-device" aria-label="Ecrã real do Android" data-enter>
-              <div className="intent-device-copy"><span className="stage-eyebrow">A Capsule em acção <span /></span><h2>Primeiro, <em>compreender.</em></h2><p>O telefone começa como superfície de aprendizagem. Depois muda para o instrumento certo.</p></div>
-              <div className="intent-device-frame"><Image src={phaseAssets.UNDERSTAND} alt="Android Morph na fase Compreender" fill sizes="(max-width: 760px) 55vw, 260px" /></div>
+            <aside className="intent-device" aria-label="Ecrãs reais do Android" data-enter>
+              <div className="intent-device-copy"><span className="stage-eyebrow">Aula ao vivo <span /></span><h2>A mesma aula.<br /><em>Três funções.</em></h2><p>O telefone começa por ensinar, protege o foco e depois mede o fenómeno.</p></div>
+              <div className="intent-device-sequence" aria-label="Metamorfose do Android">
+                <div className="sequence-item current"><div className="sequence-phone"><Image src={phaseAssets.UNDERSTAND} alt="Android Morph · Compreender" fill sizes="80px" /></div><span>COMPREENDER</span></div>
+                <i className="sequence-arrow" aria-hidden="true">→</i>
+                <div className="sequence-item"><div className="sequence-phone"><Image src="/assets/android/shield.png" alt="Android Morph Shield" fill sizes="80px" /></div><span>SHIELD</span></div>
+                <i className="sequence-arrow" aria-hidden="true">→</i>
+                <div className="sequence-item"><div className="sequence-phone"><Image src={phaseAssets.MEASURE} alt="Android Morph · Medir" fill sizes="80px" /></div><span>MEDIR</span></div>
+              </div>
             </aside>
           </section>
         ) : view === "configure" ? (
