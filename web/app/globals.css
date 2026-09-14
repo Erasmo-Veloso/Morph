@@ -185,8 +185,11 @@ body { background:var(--canvas); }
 .sequence-phone img { object-fit:cover; object-position:top center; }
 .sequence-arrow { padding-bottom:52px; color:#5d8fd6; font-size:17px; font-style:normal; }
 @media (max-width:900px) {
+  .intent-device { min-height:184px; padding:20px 22px; gap:18px; }
   .intent-device-copy { width:auto; max-width:245px; flex-basis:245px; }
-  .intent-motion-video { width:286px; height:160px; }
+  .intent-device-copy h2 { font-size:21px; }
+  .intent-device-copy p { margin-top:8px; font-size:10px; line-height:1.4; }
+  .intent-motion-video { width:270px; height:152px; }
   .splash-device-copy { width:auto; max-width:245px; flex-basis:245px; }
   .splash-device-visual { gap:9px; }
   .splash-phone { width:132px; height:176px; }
