@@ -21,7 +21,7 @@
 | No false live-device claim | When no handset is connected, the UI shows `SIMULAÇÃO`, `A AGUARDAR DEVICE` and `SEM DISPOSITIVO`. | PASS |
 | Motion communicates state change | GSAP entrance transitions run on view/phase changes and are skipped when `prefers-reduced-motion` is enabled. | PASS |
 | Competitive first-viewport proof | Against Sabiá's live-class dashboard, Morph now uses the stronger product-specific visual anchor: the same lesson changing device function across three real Android screens. | PASS |
-| Motion proof for deck and web | The first-viewport splash is a native React composition: DOM phone screen, Shield state, accelerometer graph, phase tabs and GSAP state transitions. It has no image/video dependency. | PASS |
+| Motion proof for deck and web | The landing first viewport embeds the rendered Morph transformation video: the three device functions move from Compreender through Shield to Medir. The Android app has a separate native Compose metamorphosis splash. | PASS |
 | Primary engineering gates | Web typecheck/build, root validation and Android unit tests were executed during this pass. | PASS |
 
 ## Known boundary
