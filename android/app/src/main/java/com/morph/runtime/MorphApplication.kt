@@ -16,7 +16,7 @@ class MorphApplication : Application() {
     val engine get() = runtime.phaseEngine
     val accelerometer by lazy { AccelerometerEngine(this) }
     val connectivityMonitor by lazy { ConnectivityMonitor(this) }
-    val schoolBubbleMonitor by lazy { SchoolBubbleMonitor(this) }
+    val schoolBubbleMonitor by lazy { SchoolBubbleMonitor() }
     val session by lazy { SessionClient(runtime, sentinel, scope, connectivityMonitor, schoolBubbleMonitor) }
 
     override fun onCreate() {

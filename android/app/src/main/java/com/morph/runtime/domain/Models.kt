@@ -7,7 +7,7 @@ enum class Capability {
 }
 enum class Connectivity { ONLINE, LOCAL, ISOLATED }
 enum class Integrity { VERIFIED, UNVERIFIED }
-enum class BubbleStatus { NOT_REQUIRED, CHECKING, INSIDE, OUTSIDE, UNKNOWN }
+enum class BubbleStatus { NOT_REQUIRED, DEMO_READY, CHECKING, INSIDE, OUTSIDE, UNKNOWN }
 enum class RuntimeStage { IDLE, CAPSULE_RECEIVED, READY, UNDERSTAND, MEASURE, ANALYSE, REFLECT, FINISHED }
 
 data class GeoPoint(val latitude: Double, val longitude: Double)

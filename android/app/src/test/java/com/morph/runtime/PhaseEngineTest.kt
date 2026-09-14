@@ -46,7 +46,7 @@ class PhaseEngineTest {
     }
 
     @Test
-    fun `school bubble only applies policy inside its boundary`() {
+    fun `demo-ready School Bubble starts immediately without location`() {
         val engine = PhaseEngine { 1234L }
         engine.receive(capsule(SchoolBubble("bubble", "Colégio Horizonte", GeoPoint(-8.83, 13.23), 180, 100, 300)))
         engine.markReady()
@@ -55,7 +55,7 @@ class PhaseEngineTest {
         assertEquals(RuntimeStage.READY, engine.state.value.stage)
         assertTrue(engine.activeCapabilities.value.isEmpty())
 
-        engine.setBubbleStatus(BubbleStatus.INSIDE)
+        engine.setBubbleStatus(BubbleStatus.DEMO_READY)
         engine.start()
         assertEquals(RuntimeStage.UNDERSTAND, engine.state.value.stage)
 

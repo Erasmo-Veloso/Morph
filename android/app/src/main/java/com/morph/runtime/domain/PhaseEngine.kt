@@ -76,14 +76,14 @@ class PhaseEngine(private val monotonicClock: () -> Long = { SystemClock.elapsed
         _state.value = _state.value.copy(bubbleStatus = value)
         if (value == BubbleStatus.OUTSIDE && _state.value.running) {
             suspendForBubble()
-        } else if (value == BubbleStatus.INSIDE && suspendedPhaseType != null) {
+        } else if ((value == BubbleStatus.INSIDE || value == BubbleStatus.DEMO_READY) && suspendedPhaseType != null) {
             val phaseToResume = suspendedPhaseType ?: return
             suspendedPhaseType = null
             transitionTo(phaseToResume)
         }
     }
 
-    private fun isBubbleEligible() = capsule?.schoolBubble == null || _state.value.bubbleStatus == BubbleStatus.INSIDE
+    private fun isBubbleEligible() = capsule?.schoolBubble == null || _state.value.bubbleStatus in setOf(BubbleStatus.INSIDE, BubbleStatus.DEMO_READY)
 
     private fun suspendForBubble() {
         suspendedPhaseType = _state.value.currentPhase?.type

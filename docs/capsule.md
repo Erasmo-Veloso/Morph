@@ -154,6 +154,10 @@ An `UNKNOWN` reading may retain the last confirmed `INSIDE` state for the
 configured grace period. Outside the Bubble, the runtime suspends the active
 lesson policy and clears its pedagogical capabilities.
 
+> The current hackathon APK uses `DEMO_READY`: it carries the same Bubble
+> contract but does not request or evaluate GPS during a pitch. The production
+> local evaluator is deliberately deferred so the demo never waits for a fix.
+
 ---
 
 ## State Machine

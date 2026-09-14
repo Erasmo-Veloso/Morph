@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.keyframes
@@ -76,20 +75,13 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val app: MorphApplication get() = application as MorphApplication
-    private val requestLocation = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        app.schoolBubbleMonitor.refresh()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = AndroidColor.WHITE
         window.navigationBarColor = AndroidColor.WHITE
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-        setContent {
-            MorphScreen(app) {
-                requestLocation.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION))
-            }
-        }
+        setContent { MorphScreen(app) }
     }
 
     override fun onDestroy() {
@@ -99,7 +91,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun MorphScreen(app: MorphApplication, onRequestLocation: () -> Unit) {
+private fun MorphScreen(app: MorphApplication) {
     val context = LocalContext.current
     val runtime by app.engine.state.collectAsState()
     val samples by app.accelerometer.samples.collectAsState()
@@ -123,10 +115,8 @@ private fun MorphScreen(app: MorphApplication, onRequestLocation: () -> Unit) {
             ) {
                 BrandHeader()
                 RuntimeStrip(runtime.connectivity, runtime.running, runtime.bubbleStatus)
-                if (runtime.schoolBubbleName != null && runtime.bubbleStatus != BubbleStatus.INSIDE) {
-                    TextButton(onClick = onRequestLocation, modifier = Modifier.align(Alignment.Start)) {
-                        Text("Confirmar localização para ${runtime.schoolBubbleName}", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                    }
+                if (runtime.schoolBubbleName != null && runtime.bubbleStatus == BubbleStatus.DEMO_READY) {
+                    Text("${runtime.schoolBubbleName} · pronta para demonstração", color = PrimaryBlue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
                 TextButton(
                     onClick = { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
@@ -351,6 +341,7 @@ private fun RuntimeStrip(connectivity: Connectivity, running: Boolean, bubbleSta
 
 private fun BubbleStatus.label() = when (this) {
     BubbleStatus.NOT_REQUIRED -> "SEM BUBBLE"
+    BubbleStatus.DEMO_READY -> "BUBBLE · DEMO"
     BubbleStatus.CHECKING -> "A CONFIRMAR LOCAL"
     BubbleStatus.INSIDE -> "DENTRO DA ESCOLA"
     BubbleStatus.OUTSIDE -> "FORA DA ESCOLA"
