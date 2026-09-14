@@ -189,6 +189,7 @@ private fun MorphTransformationSplash(selected: SplashMode, onFinished: () -> Un
     }
 
     val value = progress.value
+    val orbitProgress = ((value - .05f) / .55f).coerceIn(0f, 1f)
     val convergeProgress = ((value - .47f) / .38f).coerceIn(0f, 1f)
     val closeProgress = ((value - .82f) / .18f).coerceIn(0f, 1f)
     val titleAlpha = ((value - .03f) / .16f).coerceIn(0f, 1f) * (1f - closeProgress)
@@ -200,18 +201,14 @@ private fun MorphTransformationSplash(selected: SplashMode, onFinished: () -> Un
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val trailColor = BorderBlue.copy(alpha = .2f * (1f - convergeProgress))
-            val trails = listOf(
-                Triple(Offset(size.width * .09f, size.height * .27f), Offset(size.width * .33f, size.height * .06f), Offset(size.width * .47f, size.height * .44f)),
-                Triple(Offset(size.width * .9f, size.height * .24f), Offset(size.width * .67f, size.height * .07f), Offset(size.width * .57f, size.height * .4f)),
-                Triple(Offset(size.width * .78f, size.height * .86f), Offset(size.width * .96f, size.height * .63f), Offset(size.width * .55f, size.height * .58f))
-            )
-            trails.forEach { (start, control, end) ->
-                val path = Path().apply {
-                    moveTo(start.x, start.y)
-                    cubicTo(control.x, control.y, control.x, control.y, end.x, end.y)
-                }
-                drawPath(path, trailColor, style = Stroke(width = 1.5f))
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val radius = size.minDimension * (.3f - convergeProgress * .18f)
+            drawCircle(BorderBlue.copy(alpha = .62f * (1f - convergeProgress)), radius, center, style = Stroke(width = 1.5f))
+            drawCircle(BorderBlue.copy(alpha = .34f * (1f - convergeProgress)), radius * .72f, center, style = Stroke(width = 1f))
+            repeat(3) { index ->
+                val angle = -Math.PI.toFloat() / 2f + index * (Math.PI.toFloat() * 2f / 3f) + orbitProgress * .95f
+                val point = Offset(center.x + cos(angle) * radius, center.y + sin(angle) * radius)
+                drawLine(BorderBlue.copy(alpha = .2f * (1f - convergeProgress)), center, point, strokeWidth = 1f)
             }
         }
 
@@ -227,30 +224,37 @@ private fun MorphTransformationSplash(selected: SplashMode, onFinished: () -> Un
             Text("AULA AO VIVO", color = PrimaryBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
         }
 
-        val anchorX = listOf(maxWidth.value * .2f, maxWidth.value * .82f, maxWidth.value * .7f)
-        val anchorY = listOf(maxHeight.value * .29f, maxHeight.value * .27f, maxHeight.value * .78f)
+        val orbitRadius = minOf(maxWidth.value, maxHeight.value) * .3f
         SplashMode.values().forEachIndexed { index, mode ->
+            val angle = -Math.PI.toFloat() / 2f + index * (Math.PI.toFloat() * 2f / 3f) + orbitProgress * .95f
             val selectedMode = mode == selected
             val alpha = if (selectedMode) 1f else 1f - convergeProgress * .9f
-            val wander = value * 6.2f + index * 1.9f
-            val drift = if (selectedMode) 1f - convergeProgress else 1f
-            val x = anchorX[index] + (maxWidth.value / 2f - anchorX[index]) * convergeProgress + sin(wander) * maxWidth.value * .065f * drift
-            val y = anchorY[index] + (maxHeight.value / 2f - anchorY[index]) * convergeProgress + cos(wander * .82f) * maxHeight.value * .055f * drift
+            val radius = orbitRadius * (1f - convergeProgress * .78f)
+            val x = cos(angle) * radius
+            val y = sin(angle) * radius
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset((x - maxWidth.value / 2f).dp, (y - maxHeight.value / 2f).dp)
+                    .offset(x.dp, y.dp)
                     .graphicsLayer {
                         this.alpha = alpha
                         val scale = if (selectedMode) 1f + convergeProgress * .34f else 1f - convergeProgress * .14f
                         scaleX = scale
                         scaleY = scale
-                        rotationZ = wander * if (selectedMode) 14f else 22f
+                        rotationZ = orbitProgress * 360f + index * 4f
                     },
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                    Icon(mode.icon, contentDescription = mode.title, tint = mode.tint, modifier = Modifier.size(if (selectedMode) 54.dp else 46.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(if (selectedMode) 70.dp else 60.dp)
+                            .background(Color.White, CircleShape)
+                            .border(2.dp, mode.tint, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(mode.icon, contentDescription = mode.title, tint = mode.tint, modifier = Modifier.size(28.dp))
+                    }
                     Text(mode.title, color = mode.tint, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = .8.sp)
                 }
             }
