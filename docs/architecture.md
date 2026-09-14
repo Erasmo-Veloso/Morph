@@ -217,6 +217,11 @@ Android LessonRuntime + PhaseEngine
   is in `MEASURE`; lifecycle disposal unregisters the listener.
 - `PolicyAccessibilityService` observes only the foreground package name. It
   does not read window content, capture the screen or access personal data.
+- During an active lesson, `PolicyAccessibilityService` applies a small
+  phase-level allowlist: Morph only in `UNDERSTAND`/`REFLECT`, Calculator and
+  Samsung Notes in `MEASURE`, and Chrome in `ANALYSE`. A denied launch records
+  a minimal Sentinel event and returns the learner to Morph. It is an
+  accessibility-based MVP guard, not a replacement for Device Owner/kiosk mode.
 - Sentinel persists before any network attempt. A reconnect marks an event
   synced only after the server acknowledges its id.
 - `ConnectivityMonitor` combines local network validation with WebSocket

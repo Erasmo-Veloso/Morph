@@ -65,10 +65,27 @@ class PhaseEngineTest {
         assertEquals(null, PolicyState.current())
     }
 
+    @Test
+    fun `each phase exposes only its pedagogical applications`() {
+        val engine = PhaseEngine { 1234L }
+        engine.receive(capsule())
+        engine.markReady()
+        engine.start()
+        assertTrue(PolicyState.current()?.allowedPackages.orEmpty().isEmpty())
+
+        engine.transitionTo(PhaseType.MEASURE)
+        assertTrue(PolicyState.current()?.allowedPackages.orEmpty().contains("com.sec.android.app.popupcalculator"))
+        assertTrue(PolicyState.current()?.allowedPackages.orEmpty().contains("com.samsung.android.app.notes"))
+
+        engine.transitionTo(PhaseType.ANALYSE)
+        assertEquals(setOf("com.android.chrome"), PolicyState.current()?.allowedPackages)
+    }
+
     private fun capsule(schoolBubble: SchoolBubble? = null) = LessonCapsule(
         id = "test", version = 1, objective = "Movimento acelerado", phases = listOf(
             Phase("understand", PhaseType.UNDERSTAND, "Compreender", 5, setOf(Capability.LEARNING_CONTENT, Capability.GUIDED_EXPLANATION), emptySet(), emptySet()),
-            Phase("measure", PhaseType.MEASURE, "Experimentar", 10, setOf(Capability.ACCELEROMETER), setOf("com.example.distraction"), emptySet())
+            Phase("measure", PhaseType.MEASURE, "Experimentar", 10, setOf(Capability.ACCELEROMETER), setOf("com.example.distraction"), emptySet()),
+            Phase("analyse", PhaseType.ANALYSE, "Analisar", 10, setOf(Capability.GRAPH), emptySet(), emptySet())
         ), integrityMonitoring = true, offlineExecution = true,
         validFrom = "2026-09-12T00:00:00Z", validUntil = "2026-09-13T00:00:00Z", signature = "demo", schoolBubble = schoolBubble
     )

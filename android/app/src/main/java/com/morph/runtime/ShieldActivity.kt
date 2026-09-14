@@ -1,6 +1,7 @@
 package com.morph.runtime
 
 import android.graphics.Color as AndroidColor
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.ComponentActivity
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.morph.runtime.domain.PhaseType
+import com.morph.runtime.domain.PedagogicalAppPolicy
 
 class ShieldActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,17 +44,26 @@ class ShieldActivity : ComponentActivity() {
         window.navigationBarColor = AndroidColor.WHITE
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
         val phase = intent.getStringExtra(PHASE_TYPE)?.let { runCatching { PhaseType.valueOf(it) }.getOrNull() }
-        setContent { ShieldScreen(phase, onClose = ::finish) }
+        val allowedTools = intent.getStringExtra(ALLOWED_TOOLS) ?: phase?.let(PedagogicalAppPolicy::allowedToolNames).orEmpty()
+        setContent { ShieldScreen(phase, allowedTools, onReturnToLesson = ::returnToLesson) }
+    }
+
+    private fun returnToLesson() {
+        startActivity(Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        })
+        finish()
     }
 
     companion object {
         const val PACKAGE_NAME = "packageName"
         const val PHASE_TYPE = "phaseType"
+        const val ALLOWED_TOOLS = "allowedTools"
     }
 }
 
 @Composable
-private fun ShieldScreen(phase: PhaseType?, onClose: () -> Unit) {
+private fun ShieldScreen(phase: PhaseType?, allowedTools: String, onReturnToLesson: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().background(Paper).padding(horizontal = 28.dp, vertical = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -69,11 +80,11 @@ private fun ShieldScreen(phase: PhaseType?, onClose: () -> Unit) {
                 Icon(Icons.Outlined.Eco, contentDescription = null, tint = Green, modifier = Modifier.size(34.dp))
             }
             Text("Vamos de volta\nà aula?", color = Navy, fontSize = 32.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Text("Esta aplicação não faz parte da etapa actual.\nO teu foco ajuda-te a ir mais longe.", color = Muted, fontSize = 16.sp, lineHeight = 23.sp, textAlign = TextAlign.Center)
+            Text("Esta aplicação não faz parte da etapa actual.\nDisponível agora: $allowedTools.", color = Muted, fontSize = 16.sp, lineHeight = 23.sp, textAlign = TextAlign.Center)
             Text("ETAPA ACTUAL · ${phase?.name ?: "AULA"}", color = PrimaryBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
             Spacer(Modifier.height(6.dp))
             Button(
-                onClick = onClose,
+                onClick = onReturnToLesson,
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue, contentColor = Color.White),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.width(250.dp).height(52.dp)

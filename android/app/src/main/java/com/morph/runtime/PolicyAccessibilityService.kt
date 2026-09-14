@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
 import com.morph.runtime.domain.PolicyState
+import com.morph.runtime.domain.PedagogicalAppPolicy
 import kotlinx.coroutines.launch
 
 class PolicyAccessibilityService : AccessibilityService() {
@@ -16,7 +17,7 @@ class PolicyAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val packageName = event?.packageName?.toString() ?: return
         val policy = PolicyState.current() ?: return
-        if (packageName == packageNameForOwnApp() || packageName !in policy.restrictedPackages) return
+        if (packageName == packageNameForOwnApp() || packageName in policy.allowedPackages || packageName in systemPackages) return
         val now = System.currentTimeMillis()
         // Chrome emits several window events while it is booting. Keep one
         // shield response per package window so a late BACK event cannot
@@ -33,10 +34,24 @@ class PolicyAccessibilityService : AccessibilityService() {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 putExtra(ShieldActivity.PACKAGE_NAME, packageName)
                 putExtra(ShieldActivity.PHASE_TYPE, policy.phaseType.name)
+                putExtra(ShieldActivity.ALLOWED_TOOLS, PedagogicalAppPolicy.allowedToolNames(policy.phaseType))
             })
         }, 700L)
     }
 
     private fun packageNameForOwnApp() = packageName
     override fun onInterrupt() = Unit
+
+    companion object {
+        // These are Android UI surfaces, not student applications. The launcher
+        // is neutral: pupils may see it, but every app opened from it is still
+        // checked against the phase allowlist. Settings remains restricted.
+        private val systemPackages = setOf(
+            "android",
+            "com.android.systemui",
+            "com.sec.android.app.launcher",
+            "com.samsung.android.launcher",
+            "com.android.launcher3"
+        )
+    }
 }
