@@ -136,6 +136,10 @@ body { background:var(--canvas); }
 }
 /* First-viewport proof: the Morph advantage is the changing device, not a decorative hero. */
 .intent-device { align-items:center; }
+.intent-device-copy { width:220px; max-width:220px; flex:0 0 220px; }
+.intent-device-copy h2 { font-size:23px; }
+.intent-device-sequence { display:flex; min-width:0; align-items:center; justify-content:flex-end; margin-left:auto; }
+.intent-motion-video { display:block; width:318px; height:178px; border:1px solid rgba(141,187,255,.25); border-radius:12px; object-fit:cover; background:#f5f7fc; box-shadow:0 14px 24px rgba(0,0,0,.22); }
 .intent-device-code { display:flex; width:100%; align-items:center; justify-content:space-between; gap:22px; }
 .splash-device-copy { width:230px; flex:0 0 230px; }
 .splash-device-copy .stage-eyebrow { margin-bottom:12px; color:#8dbbff; }
@@ -181,11 +185,16 @@ body { background:var(--canvas); }
 .sequence-phone img { object-fit:cover; object-position:top center; }
 .sequence-arrow { padding-bottom:52px; color:#5d8fd6; font-size:17px; font-style:normal; }
 @media (max-width:900px) {
+  .intent-device-copy { width:auto; max-width:245px; flex-basis:245px; }
+  .intent-motion-video { width:286px; height:160px; }
   .splash-device-copy { width:auto; max-width:245px; flex-basis:245px; }
   .splash-device-visual { gap:9px; }
   .splash-phone { width:132px; height:176px; }
 }
 @media (max-width:560px) {
+  .intent-device-copy { width:auto; max-width:none; margin-bottom:18px; }
+  .intent-device-sequence { justify-content:space-between; margin-left:0; }
+  .intent-motion-video { width:100%; height:auto; aspect-ratio:16 / 9; }
   .intent-device-code { flex-direction:column; align-items:stretch; }
   .splash-device-copy { width:auto; max-width:none; margin-bottom:8px; }
   .splash-device-visual { justify-content:space-between; }
