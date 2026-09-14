@@ -28,6 +28,22 @@ export interface LearningPhase {
   transitions: { next: PhaseType | null };
 }
 
+export interface SchoolBubble {
+  id: string;
+  school_id: string;
+  name: string;
+  boundary: {
+    type: "CIRCLE";
+    center: { latitude: number; longitude: number };
+    radius_meters: number;
+  };
+  policy: {
+    gps_required: boolean;
+    max_accuracy_meters: number;
+    unknown_location_grace_seconds: number;
+  };
+}
+
 export interface LearningCapsule {
   id: string;
   version: 1;
@@ -46,6 +62,7 @@ export interface LearningCapsule {
   valid_from: string;
   valid_until: string;
   signature?: string;
+  school_bubble?: SchoolBubble;
 }
 
 export type LessonCapsule = LearningCapsule;
@@ -88,7 +105,26 @@ export function parseLessonCapsule(input: unknown): LearningCapsule {
   if (input.signature !== undefined && !isNonEmptyString(input.signature)) {
     throw new Error("signature must be a non-empty string");
   }
+  if (input.school_bubble !== undefined) parseSchoolBubble(input.school_bubble);
   return input as unknown as LearningCapsule;
+}
+
+function parseSchoolBubble(input: unknown): SchoolBubble {
+  if (!isRecord(input)) throw new Error("school_bubble must be an object");
+  if (!isNonEmptyString(input.id) || !isNonEmptyString(input.school_id) || !isNonEmptyString(input.name)) {
+    throw new Error("school_bubble id, school_id and name are required");
+  }
+  if (!isRecord(input.boundary) || input.boundary.type !== "CIRCLE" || !isRecord(input.boundary.center)) {
+    throw new Error("school_bubble must define a circular boundary");
+  }
+  const { latitude, longitude } = input.boundary.center;
+  if (typeof latitude !== "number" || latitude < -90 || latitude > 90 || typeof longitude !== "number" || longitude < -180 || longitude > 180 || !isPositiveNumber(input.boundary.radius_meters)) {
+    throw new Error("school_bubble boundary is invalid");
+  }
+  if (!isRecord(input.policy) || typeof input.policy.gps_required !== "boolean" || !isPositiveNumber(input.policy.max_accuracy_meters) || !isPositiveNumber(input.policy.unknown_location_grace_seconds)) {
+    throw new Error("school_bubble policy is invalid");
+  }
+  return input as unknown as SchoolBubble;
 }
 
 function parsePhase(input: unknown, index: number): LearningPhase {

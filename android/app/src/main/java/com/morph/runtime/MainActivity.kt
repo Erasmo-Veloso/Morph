@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.keyframes
@@ -66,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.morph.runtime.domain.Capability
 import com.morph.runtime.domain.Connectivity
+import com.morph.runtime.domain.BubbleStatus
 import com.morph.runtime.domain.PhaseType
 import com.morph.runtime.domain.RuntimeStage
 import kotlin.math.cos
@@ -74,13 +76,20 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val app: MorphApplication get() = application as MorphApplication
+    private val requestLocation = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        app.schoolBubbleMonitor.refresh()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = AndroidColor.WHITE
         window.navigationBarColor = AndroidColor.WHITE
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-        setContent { MorphScreen(app) }
+        setContent {
+            MorphScreen(app) {
+                requestLocation.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION))
+            }
+        }
     }
 
     override fun onDestroy() {
@@ -90,7 +99,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun MorphScreen(app: MorphApplication) {
+private fun MorphScreen(app: MorphApplication, onRequestLocation: () -> Unit) {
     val context = LocalContext.current
     val runtime by app.engine.state.collectAsState()
     val samples by app.accelerometer.samples.collectAsState()
@@ -113,7 +122,12 @@ private fun MorphScreen(app: MorphApplication) {
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 BrandHeader()
-                RuntimeStrip(runtime.connectivity, runtime.running)
+                RuntimeStrip(runtime.connectivity, runtime.running, runtime.bubbleStatus)
+                if (runtime.schoolBubbleName != null && runtime.bubbleStatus != BubbleStatus.INSIDE) {
+                    TextButton(onClick = onRequestLocation, modifier = Modifier.align(Alignment.Start)) {
+                        Text("Confirmar localização para ${runtime.schoolBubbleName}", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
                 TextButton(
                     onClick = { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                     modifier = Modifier.align(Alignment.Start)
@@ -325,12 +339,22 @@ private fun BrandHeader() {
 }
 
 @Composable
-private fun RuntimeStrip(connectivity: Connectivity, running: Boolean) {
+private fun RuntimeStrip(connectivity: Connectivity, running: Boolean, bubbleStatus: BubbleStatus) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         StatusMark(if (running) "EM AULA" else "A AGUARDAR", running)
         Text("·", color = BorderBlue, fontWeight = FontWeight.Bold)
         StatusMark(if (connectivity == Connectivity.ISOLATED) "OFFLINE" else "ONLINE", connectivity != Connectivity.ISOLATED)
+        Text("·", color = BorderBlue, fontWeight = FontWeight.Bold)
+        StatusMark(bubbleStatus.label(), bubbleStatus == BubbleStatus.INSIDE || bubbleStatus == BubbleStatus.NOT_REQUIRED)
     }
+}
+
+private fun BubbleStatus.label() = when (this) {
+    BubbleStatus.NOT_REQUIRED -> "SEM BUBBLE"
+    BubbleStatus.CHECKING -> "A CONFIRMAR LOCAL"
+    BubbleStatus.INSIDE -> "DENTRO DA ESCOLA"
+    BubbleStatus.OUTSIDE -> "FORA DA ESCOLA"
+    BubbleStatus.UNKNOWN -> "LOCALIZAÇÃO INDISPONÍVEL"
 }
 
 @Composable

@@ -15,6 +15,7 @@ object CapsuleParser {
         val integrityPolicy = root.getJSONObject("integrity_policy")
         val offlinePolicy = root.getJSONObject("offline_policy")
         require(integrityPolicy.has("enabled") && offlinePolicy.has("enabled")) { "Policy incompleta" }
+        val schoolBubble = root.optJSONObject("school_bubble")?.let(::parseSchoolBubble)
 
         return LessonCapsule(
             id = id,
@@ -25,7 +26,27 @@ object CapsuleParser {
             offlineExecution = offlinePolicy.getBoolean("enabled"),
             validFrom = root.requiredString("valid_from"),
             validUntil = root.requiredString("valid_until"),
-            signature = root.optString("signature").takeIf { it.isNotBlank() }
+            signature = root.optString("signature").takeIf { it.isNotBlank() },
+            schoolBubble = schoolBubble
+        )
+    }
+
+    private fun parseSchoolBubble(json: JSONObject): SchoolBubble {
+        val boundary = json.getJSONObject("boundary")
+        require(boundary.requiredString("type") == "CIRCLE") { "Boundary da School Bubble inválida" }
+        val center = boundary.getJSONObject("center")
+        val latitude = center.getDouble("latitude").also { require(it in -90.0..90.0) { "Latitude inválida" } }
+        val longitude = center.getDouble("longitude").also { require(it in -180.0..180.0) { "Longitude inválida" } }
+        val radius = boundary.positiveInt("radius_meters")
+        val policy = json.getJSONObject("policy")
+        require(policy.getBoolean("gps_required")) { "GPS é obrigatório para a School Bubble" }
+        return SchoolBubble(
+            id = json.requiredString("id"),
+            name = json.requiredString("name"),
+            center = GeoPoint(latitude, longitude),
+            radiusMeters = radius,
+            maxAccuracyMeters = policy.positiveInt("max_accuracy_meters"),
+            unknownLocationGraceSeconds = policy.positiveInt("unknown_location_grace_seconds")
         )
     }
 

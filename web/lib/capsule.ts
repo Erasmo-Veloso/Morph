@@ -32,6 +32,22 @@ export type LearningPhase = {
   };
 };
 
+export type SchoolBubble = {
+  id: string;
+  school_id: string;
+  name: string;
+  boundary: {
+    type: "CIRCLE";
+    center: { latitude: number; longitude: number };
+    radius_meters: number;
+  };
+  policy: {
+    gps_required: boolean;
+    max_accuracy_meters: number;
+    unknown_location_grace_seconds: number;
+  };
+};
+
 export type LearningCapsule = {
   id: string;
   version: 1;
@@ -50,6 +66,7 @@ export type LearningCapsule = {
   valid_from: string;
   valid_until: string;
   signature: string;
+  school_bubble?: SchoolBubble;
 };
 
 export type CompileResult = {

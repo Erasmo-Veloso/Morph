@@ -223,6 +223,10 @@ Android LessonRuntime + PhaseEngine
   reachability: `ONLINE` means validated Internet plus server, `LOCAL` means
   server reachable without validated Internet, and `ISOLATED` means server
   unreachable.
+- `SchoolBubbleMonitor` is an on-device, foreground GPS listener. It evaluates
+  the Bubble copied into the Capsule and exposes only a derived eligibility
+  state. `PhaseEngine` will not start outside the Bubble and suspends an active
+  policy on a confirmed exit; GPS loss follows the Capsule grace period.
 
 The demo server uses one WebSocket endpoint. `teacher:next` is broadcast as
 `phase:changed`, which makes the Android state transition observable in real

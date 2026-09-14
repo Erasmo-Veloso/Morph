@@ -393,6 +393,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
             {session ? <section className="runtime-live" aria-label="Estado real do Android" data-enter>
               <div><span>Android</span><strong>{runtimeDevice?.phase ?? "A AGUARDAR DEVICE"}</strong></div>
               <div><span>Conectividade</span><strong>{runtimeDevice?.connectivity ?? "SEM DISPOSITIVO"}</strong></div>
+              <div><span>School Bubble</span><strong>{runtimeDevice?.bubbleStatus ?? "A CONFIRMAR"}</strong></div>
               <div><span>Sentinel</span><strong>{latestRuntimeEvent?.type ?? "SEM EVENTOS"}</strong></div>
             </section> : null}
             {errorMessage ? <p className="action-error" role="alert">{errorMessage}</p> : null}

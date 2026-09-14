@@ -7,7 +7,19 @@ enum class Capability {
 }
 enum class Connectivity { ONLINE, LOCAL, ISOLATED }
 enum class Integrity { VERIFIED, UNVERIFIED }
+enum class BubbleStatus { NOT_REQUIRED, CHECKING, INSIDE, OUTSIDE, UNKNOWN }
 enum class RuntimeStage { IDLE, CAPSULE_RECEIVED, READY, UNDERSTAND, MEASURE, ANALYSE, REFLECT, FINISHED }
+
+data class GeoPoint(val latitude: Double, val longitude: Double)
+
+data class SchoolBubble(
+    val id: String,
+    val name: String,
+    val center: GeoPoint,
+    val radiusMeters: Int,
+    val maxAccuracyMeters: Int,
+    val unknownLocationGraceSeconds: Int
+)
 
 data class Phase(
     val id: String,
@@ -28,7 +40,8 @@ data class LessonCapsule(
     val offlineExecution: Boolean,
     val validFrom: String,
     val validUntil: String,
-    val signature: String?
+    val signature: String?,
+    val schoolBubble: SchoolBubble? = null
 )
 
 data class RuntimeState(
@@ -37,6 +50,8 @@ data class RuntimeState(
     val currentPhase: Phase? = null,
     val connectivity: Connectivity = Connectivity.ISOLATED,
     val integrity: Integrity = Integrity.UNVERIFIED,
+    val bubbleStatus: BubbleStatus = BubbleStatus.NOT_REQUIRED,
+    val schoolBubbleName: String? = null,
     val running: Boolean = false,
     val status: String = "À espera de Capsule",
     val monotonicStartedAtMs: Long? = null

@@ -103,7 +103,46 @@ body { background:var(--canvas); }
 .phase-stage-top { margin-bottom:27px; }
 .phase-navigation { justify-content:flex-start; }
 .stage-action { align-items:flex-start; }
-.runtime-live { width:100%; max-width:720px; }
+.runtime-live { width:100%; max-width:720px; grid-template-columns:repeat(4,minmax(0,1fr)); }
+
+/* School Bubble — configuration is deliberately limited to a single, explainable circle for the MVP. */
+.school-grid-bubble { grid-template-columns:1.32fr .68fr; }
+.school-bubble-editor { padding-bottom:18px; }
+.school-bubble-controls { display:grid; grid-template-columns:1fr 1fr auto; gap:12px; align-items:end; margin:19px 0 14px; }
+.school-bubble-controls label { display:grid; gap:6px; color:#61718a; font-size:10px; font-weight:800; letter-spacing:.04em; }
+.school-bubble-controls label span { color:#287bea; }
+.school-bubble-controls input:not([type="range"]) { width:100%; border:1px solid #dbe6f3; border-radius:9px; padding:10px; color:#203359; background:#fbfdff; font:inherit; letter-spacing:0; outline:none; }
+.school-bubble-controls input:not([type="range"]):focus { border-color:#287bea; box-shadow:0 0 0 3px rgba(40,123,234,.1); }
+.school-bubble-controls input[type="range"] { width:100%; accent-color:#287bea; }
+.bubble-coordinate { display:flex; min-height:43px; align-items:center; gap:8px; border:1px solid #d8ebfb; border-radius:9px; padding:7px 10px; color:#287bea; background:#f5faff; }
+.bubble-coordinate span { display:grid; gap:2px; color:#72829a; font-size:9px; }
+.bubble-coordinate strong { color:#294166; font-size:10px; }
+.school-leaflet-map { height:300px; overflow:hidden; border:1px solid #d9e6f4; border-radius:13px; background:#edf4fb; }
+.school-leaflet-map .leaflet-control-attribution { font-size:8px; }
+.school-map-loading { display:grid; height:300px; place-items:center; border:1px solid #d9e6f4; border-radius:13px; color:#69809e; background:#f5faff; font-size:12px; }
+.bubble-editor-footer { display:flex; align-items:center; justify-content:space-between; gap:15px; margin-top:14px; }
+.bubble-editor-footer p { display:flex; align-items:center; gap:6px; margin:0; color:#728098; font-size:10px; line-height:1.4; }
+.bubble-editor-footer p svg { flex:0 0 auto; color:#287bea; }
+.bubble-editor-footer button { display:inline-flex; align-items:center; justify-content:center; gap:7px; border:0; border-radius:9px; padding:10px 13px; color:#fff; background:#287bea; font:inherit; font-size:11px; font-weight:850; cursor:pointer; }
+.bubble-editor-footer button:disabled { cursor:wait; opacity:.66; }
+.school-policy-card { display:flex; flex-direction:column; }
+.school-policy-card > .school-card-header > svg { color:#287bea; }
+.school-policy-list { display:grid; gap:13px; margin:20px 0; padding:0; list-style:none; }
+.school-policy-list li { display:grid; grid-template-columns:24px 1fr; gap:9px; }
+.school-policy-list li > span { display:grid; width:23px; height:23px; place-items:center; border-radius:50%; color:#287bea; background:#edf6ff; font-size:9px; font-weight:850; }
+.school-policy-list strong,.school-policy-list small { display:block; }
+.school-policy-list strong { color:#2a3e62; font-size:11px; }
+.school-policy-list small { margin-top:3px; color:#7c8b9f; font-size:10px; line-height:1.45; }
+.school-policy-note { display:flex; align-items:flex-start; gap:8px; margin-top:auto; border-radius:10px; padding:11px; color:#47627b; background:#f5f9fd; font-size:10px; line-height:1.5; }
+.school-policy-note svg { flex:0 0 auto; color:#2ebc82; }
+.selected-teacher { border-color:#b9d7ff; background:#f8fbff; }
+.school-assignment { display:flex; align-items:center; gap:9px; margin-top:13px; border-radius:11px; padding:12px; color:#61718a; background:#f5f9fd; font-size:10px; line-height:1.45; }
+.school-assignment > svg { flex:0 0 auto; color:#287bea; }
+.school-assignment strong { color:#2d4266; }
+.school-assignment a { display:inline-flex; align-items:center; gap:5px; margin-left:auto; color:#287bea; font-weight:850; text-decoration:none; white-space:nowrap; }
+@media (max-width:900px) { .school-grid-bubble { grid-template-columns:1fr; }.school-bubble-controls { grid-template-columns:1fr 1fr; }.bubble-coordinate { grid-column:1 / -1; } }
+@media (max-width:760px) { .runtime-live { grid-template-columns:1fr; } }
+@media (max-width:560px) { .school-shell { padding:0 18px 32px; }.school-bubble-controls { grid-template-columns:1fr; }.bubble-coordinate { grid-column:auto; }.school-leaflet-map,.school-map-loading { height:270px; }.bubble-editor-footer,.school-assignment { align-items:stretch; flex-direction:column; }.bubble-editor-footer button,.school-assignment a { width:100%; }.school-assignment a { justify-content:center; margin-left:0; }.school-metrics { grid-template-columns:1fr 1fr; } }
 .real-phone-screen { display:block; width:100%; height:auto; border-radius:20px; }
 .phone-frame { width:250px; padding:0; border:6px solid #070c17; overflow:hidden; }
 .phone-frame .android-analysis-screen { height:540px; }

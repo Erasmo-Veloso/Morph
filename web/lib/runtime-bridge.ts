@@ -15,6 +15,8 @@ export type RuntimeStatus = {
     phase?: string;
     connectivity: "ONLINE" | "LOCAL" | "ISOLATED";
     integrity: string;
+    bubbleStatus?: "NOT_REQUIRED" | "CHECKING" | "INSIDE" | "OUTSIDE" | "UNKNOWN";
+    bubbleName?: string;
     lastSeen: number;
     receivedAt: number;
   }>;
