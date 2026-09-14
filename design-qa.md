@@ -12,7 +12,7 @@
 | Check | Evidence | Result |
 | --- | --- | --- |
 | Brand lockup and editorial white system | Teacher Studio uses the supplied Morph lockup, navy type, quiet neutral canvas and blue interaction accent. | PASS |
-| Capsule is visible before configuration | First view exposes `Criar Capsule`, pedagogical intent, four phases and a three-screen live proof: `Compreender` → `Shield` → `Medir`. | PASS |
+| Capsule is visible before configuration | First view exposes `Criar Capsule`, pedagogical intent, four phases and an autoplay product proof: `Compreender` → `Shield` → `Medir`. | PASS |
 | Teacher flow is executable | `Compilar a aula` → phase capability configuration → `Confirmar Cápsula` → presentation view. | PASS |
 | Device transformation is legible | Presentation view changes from `Compreender` to `Medir` with a different Android product screen and phase role. | PASS |
 | Measure is concrete | The Android `measure.png` screen exposes the accelerometer and the teacher view labels the device as the measuring instrument. | PASS |
@@ -21,6 +21,7 @@
 | No false live-device claim | When no handset is connected, the UI shows `SIMULAÇÃO`, `A AGUARDAR DEVICE` and `SEM DISPOSITIVO`. | PASS |
 | Motion communicates state change | GSAP entrance transitions run on view/phase changes and are skipped when `prefers-reduced-motion` is enabled. | PASS |
 | Competitive first-viewport proof | Against Sabiá's live-class dashboard, Morph now uses the stronger product-specific visual anchor: the same lesson changing device function across three real Android screens. | PASS |
+| Motion proof for deck and web | `motion/artifacts/morph-transformation.mp4` is rendered at 1920×1080 and embedded muted/looped in Teacher Studio as `web/public/media/morph-transformation.mp4`. | PASS |
 | Primary engineering gates | Web typecheck/build, root validation and Android unit tests were executed during this pass. | PASS |
 
 ## Known boundary
