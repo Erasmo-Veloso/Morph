@@ -129,6 +129,57 @@ function AndroidPhasePreview({ phase }: { phase: PhaseId }) {
     : <Image src={phaseAssets[phase]} alt={`Android Morph · ${phaseMeta[phase].label}`} fill sizes="(max-width: 760px) 90vw, 330px" />;
 }
 
+const splashStages = [
+  { id: "UNDERSTAND" as const, number: "01", label: "COMPREENDER", title: "Compreender", detail: "Explora o fenómeno e regista a tua hipótese." },
+  { id: "SHIELD" as const, number: "02", label: "SHIELD", title: "Morph Shield", detail: "O telefone protege o foco quando a aula pede atenção." },
+  { id: "MEASURE" as const, number: "03", label: "MEDIR", title: "Experimentar", detail: "O acelerómetro recolhe dados do movimento real." }
+];
+
+function TransformationSplash() {
+  const [activeStage, setActiveStage] = useState(0);
+  const screenRef = useRef<HTMLDivElement>(null);
+  const pulseRef = useRef<HTMLSpanElement>(null);
+  const stage = splashStages[activeStage]!;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setActiveStage((current) => (current + 1) % splashStages.length), 2400);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const context = gsap.context(() => {
+      gsap.fromTo(screenRef.current, { autoAlpha: 0, y: 12, scale: .97 }, { autoAlpha: 1, y: 0, scale: 1, duration: .48, ease: "power2.out" });
+      gsap.fromTo(pulseRef.current, { scale: .7, autoAlpha: .35 }, { scale: 1.45, autoAlpha: 0, duration: 1.1, repeat: 1, ease: "power1.out" });
+    }, screenRef);
+    return () => context.revert();
+  }, [activeStage]);
+
+  return <div className="intent-device-code" aria-label="Demonstração codificada da metamorfose do Android">
+    <div className="splash-device-copy">
+      <span className="stage-eyebrow">Aula ao vivo <span /></span>
+      <h2>A mesma aula.<br /><em>Três funções.</em></h2>
+      <p>O telefone começa por ensinar, protege o foco e depois mede o fenómeno.</p>
+      <div className="splash-stage-tabs" role="tablist" aria-label="Fases da demonstração">
+        {splashStages.map((item, index) => <button key={item.id} type="button" role="tab" aria-selected={index === activeStage} className={index === activeStage ? "active" : ""} onClick={() => setActiveStage(index)}><span>{item.number}</span>{item.label}</button>)}
+      </div>
+    </div>
+    <div className="splash-device-visual">
+      <div className="splash-signal" aria-hidden="true"><span ref={pulseRef} /></div>
+      <div className="splash-phone" ref={screenRef} data-stage={stage.id}>
+        <div className="splash-phone-status"><span>11:52</span><span>5G&nbsp; · &nbsp;▮</span></div>
+        <div className="splash-phone-brand"><span className="splash-mark">M</span><strong>morph</strong></div>
+        <div className="splash-phone-runtime"><span>● EM AULA</span><i>·</i><span>● ONLINE</span></div>
+        {stage.id === "UNDERSTAND" && <div className="splash-screen-content"><span className="splash-kicker">CAPSULE · 01 / 04</span><h3>Compreender</h3><p>O telefone certo para cada momento da aula.</p><span className="splash-rule" /><div className="splash-content-card"><strong>Qual é a tua hipótese?</strong><span /><span /><span /></div></div>}
+        {stage.id === "SHIELD" && <div className="splash-screen-content splash-shield-content"><span className="splash-kicker">MORPH SHIELD</span><div className="splash-shield-icon">↗</div><h3>Vamos de volta<br />à aula?</h3><p>O foco ajuda-te a ir mais longe.</p><button type="button">Continuar a aprender</button></div>}
+        {stage.id === "MEASURE" && <div className="splash-screen-content"><span className="splash-kicker">CAPSULE · 03 / 04</span><h3>Medir</h3><p>Dados do movimento.</p><span className="splash-rule" /><div className="splash-measure-card"><strong>Acelerómetro real</strong><b>3.74</b><div className="splash-chart" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div><small>m/s²&nbsp; · &nbsp;dados recolhidos pelo dispositivo</small></div></div>}
+        <div className="splash-phone-progress">{splashStages.map((item, index) => <span key={item.id} className={index <= activeStage ? "done" : ""} />)}</div>
+      </div>
+      <div className="splash-stage-caption"><strong>{stage.number} / {stage.title}</strong><span>{stage.detail}</span></div>
+    </div>
+  </div>;
+}
+
 export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningCapsule }) {
   const [intent, setIntent] = useState(defaultIntent);
   const [capsule, setCapsule] = useState(initialCapsule);
@@ -296,10 +347,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
               </div>
             </div>
             <aside className="intent-device" aria-label="Ecrãs reais do Android" data-enter>
-              <div className="intent-device-copy"><span className="stage-eyebrow">Aula ao vivo <span /></span><h2>A mesma aula.<br /><em>Três funções.</em></h2><p>O telefone começa por ensinar, protege o foco e depois mede o fenómeno.</p></div>
-              <div className="intent-device-sequence" aria-label="Metamorfose do Android">
-                <video className="intent-motion-video" src="/media/morph-transformation.mp4" poster={phaseAssets.UNDERSTAND} autoPlay muted loop playsInline preload="metadata" aria-label="Demonstração da transformação do smartphone entre Compreender, Shield e Medir" />
-              </div>
+              <TransformationSplash />
             </aside>
           </section>
         ) : view === "configure" ? (
