@@ -87,6 +87,9 @@ class SessionClient(
                     runtime.receive(message.getJSONObject("capsule").toString())
                     runtime.markReady()
                     schoolBubbleMonitor.updateBubble(runtime.currentSchoolBubble())
+                    // Apply the pitch adapter immediately; the Flow collector still
+                    // observes subsequent changes, but the first render must not race it.
+                    engine.setBubbleStatus(schoolBubbleMonitor.status.value)
                     updateConnectivity()
                     sendDeviceStatus()
                 }
