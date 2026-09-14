@@ -7,6 +7,17 @@ export async function GET() {
   try {
     return NextResponse.json(await getRuntimeStatus());
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Runtime bridge unavailable." }, { status: 503 });
+    return NextResponse.json({
+      session: {
+        type: "session:state",
+        capsuleId: "",
+        running: false,
+        phase: "FINISHED"
+      },
+      devices: [],
+      events: [],
+      runtimeAvailable: false,
+      error: error instanceof Error ? error.message : "Runtime bridge unavailable."
+    });
   }
 }
