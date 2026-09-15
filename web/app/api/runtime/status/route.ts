@@ -14,6 +14,16 @@ export async function GET() {
         running: false,
         phase: "FINISHED"
       },
+      enrollment: {
+        schoolId: "school-horizonte",
+        classId: "10A-FISICA",
+        studentId: "demo-student",
+        studentName: "Aluno demo",
+        deviceId: null,
+        deviceName: null,
+        pairingCode: "MORPH-2026",
+        state: "PENDING"
+      },
       devices: [],
       events: [],
       runtimeAvailable: false,

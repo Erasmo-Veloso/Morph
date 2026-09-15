@@ -44,6 +44,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -73,6 +74,8 @@ import androidx.compose.ui.unit.sp
 import com.morph.runtime.domain.Capability
 import com.morph.runtime.domain.Connectivity
 import com.morph.runtime.domain.BubbleStatus
+import com.morph.runtime.domain.DeviceEnrollment
+import com.morph.runtime.domain.SchoolContext
 import com.morph.runtime.domain.PhaseType
 import com.morph.runtime.domain.Phase
 import com.morph.runtime.domain.AllowedApp
@@ -124,6 +127,18 @@ private fun MorphScreen(app: MorphApplication) {
             ) {
                 BrandHeader()
                 RuntimeStrip(runtime.connectivity, runtime.running, runtime.bubbleStatus)
+                if (runtime.running && runtime.connectivity != Connectivity.ONLINE) {
+                    Text(
+                        when (runtime.connectivity) {
+                            Connectivity.LOCAL -> "LOCAL · A aula continua neste dispositivo."
+                            Connectivity.ISOLATED -> "OFFLINE · A aula continua neste dispositivo."
+                            Connectivity.ONLINE -> ""
+                        },
+                        color = Muted,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
                 if (runtime.running && phase != null) AllowedAppShortcuts(phase, context)
                 if (runtime.schoolBubbleName != null && runtime.bubbleStatus == BubbleStatus.DEMO_READY) {
                     Text("${runtime.schoolBubbleName} · pronta para demonstração", color = PrimaryBlue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -137,16 +152,23 @@ private fun MorphScreen(app: MorphApplication) {
                     Text("Abrir permissões de protecção", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 }
 
-                AnimatedContent(targetState = runtime.stage, label = "runtime-stage") { stage ->
-                    when (stage) {
+                AnimatedContent(targetState = Triple(runtime.enrollment, runtime.schoolContext, runtime.stage), label = "runtime-stage") { (_, schoolContext, stage) ->
+                    when {
+                        runtime.enrollment == DeviceEnrollment.UNENROLLED -> EnrollmentState(onPair = app.session::pairDevice)
+                        schoolContext == SchoolContext.OUTSIDE_SCHOOL -> OutsideSchoolState()
+                        schoolContext == SchoolContext.SCHOOL_UNVERIFIED && runtime.running -> UnverifiedContextState()
+                        schoolContext == SchoolContext.SCHOOL_VERIFIED && !runtime.running && stage == RuntimeStage.IDLE -> SchoolIdleState()
+                        else -> when (stage) {
                         RuntimeStage.IDLE,
                         RuntimeStage.CAPSULE_RECEIVED,
                         RuntimeStage.READY -> WelcomeState(runtime.status)
                         RuntimeStage.UNDERSTAND -> UnderstandState(phase?.title ?: "Compreender")
                         RuntimeStage.MEASURE -> MeasureState(samples, magnitude)
-                        RuntimeStage.ANALYSE,
-                        RuntimeStage.REFLECT -> ActivePhaseState(stage, phase?.title ?: stage.name, phase?.capabilities ?: emptySet())
+                        RuntimeStage.ANALYSE -> AnalyseState(samples)
+                        RuntimeStage.REFLECT -> ReflectState(runtime.capsuleId, app.reflections)
+                        RuntimeStage.BREAK -> BreakState(onFinish = app.session::finishBreak)
                         RuntimeStage.FINISHED -> FinishedState()
+                        }
                     }
                 }
 
@@ -167,6 +189,54 @@ private fun MorphScreen(app: MorphApplication) {
                 onFinished = { splashVisible = false }
             )
         }
+    }
+}
+
+@Composable
+private fun EnrollmentState(onPair: (String) -> Unit) {
+    var code by remember { mutableStateOf("") }
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Eyebrow("DISPOSITIVO · ASSOCIAÇÃO")
+        Text("Associar este telefone.", color = Navy, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+        Text("O código liga este dispositivo ao Aluno demo e ao Colégio Horizonte. Sem associação, a escola não aplica qualquer política.", color = Muted, fontSize = 16.sp, lineHeight = 22.sp)
+        BlueRule()
+        OutlinedTextField(value = code, onValueChange = { code = it.uppercase(Locale.ROOT) }, singleLine = true, label = { Text("Código de associação") }, placeholder = { Text("MORPH-2026") }, modifier = Modifier.fillMaxWidth())
+        Button(onClick = { onPair(code) }, enabled = code.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text("Associar dispositivo", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun SchoolIdleState() {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Eyebrow("COLÉGIO HORIZONTE · CONTEXTO VERIFICADO")
+        Text("Na escola.\nSem restrições.", color = Navy, fontSize = 33.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold)
+        Text("A escola reconhece o contexto, mas só uma Capsule activa pode orientar este telefone.", color = Muted, fontSize = 17.sp, lineHeight = 24.sp)
+        BlueRule()
+        FeatureCard(Icons.Outlined.Check, "autoridade", "À espera da próxima aula.") { Text("O telefone continua disponível até o professor iniciar uma Capsule.", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+    }
+}
+
+@Composable
+private fun OutsideSchoolState() {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Eyebrow("MORPH · PASSIVO")
+        Text("Fora do contexto\nescolar.", color = Navy, fontSize = 33.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold)
+        Text("O teu smartphone está totalmente disponível. Nenhuma política escolar permanece activa.", color = Muted, fontSize = 17.sp, lineHeight = 24.sp)
+        BlueRule()
+        FeatureCard(Icons.Outlined.Eco, "autonomia", "Sem Capsule. Sem restrições.") { Text("Morph volta a observar apenas o contexto pedagógico, não o uso pessoal.", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+    }
+}
+
+@Composable
+private fun UnverifiedContextState() {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Eyebrow("CONTEXTO · A CONFIRMAR")
+        Text("A aula continua\npor agora.", color = Navy, fontSize = 33.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold)
+        Text("O sinal da escola deixou de ser suficiente. A Capsule mantém-se temporariamente e o professor é informado.", color = Muted, fontSize = 17.sp, lineHeight = 24.sp)
+        BlueRule()
+        FeatureCard(Icons.Outlined.Policy, "unverified", "Política temporária e explicável.") { Text("Quando o contexto volta, a aula é verificada. Ao sair, todas as restrições são removidas.", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
     }
 }
 
@@ -343,7 +413,14 @@ private fun RuntimeStrip(connectivity: Connectivity, running: Boolean, bubbleSta
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         StatusMark(if (running) "EM AULA" else "A AGUARDAR", running)
         Text("·", color = BorderBlue, fontWeight = FontWeight.Bold)
-        StatusMark(if (connectivity == Connectivity.ISOLATED) "OFFLINE" else "ONLINE", connectivity != Connectivity.ISOLATED)
+        StatusMark(
+            when (connectivity) {
+                Connectivity.ONLINE -> "ONLINE"
+                Connectivity.LOCAL -> "LOCAL"
+                Connectivity.ISOLATED -> "OFFLINE"
+            },
+            connectivity != Connectivity.ISOLATED
+        )
         Text("·", color = BorderBlue, fontWeight = FontWeight.Bold)
         StatusMark(bubbleStatus.label(), bubbleStatus == BubbleStatus.INSIDE || bubbleStatus == BubbleStatus.NOT_REQUIRED)
     }
@@ -479,23 +556,65 @@ private fun MeasureState(samples: List<Float>, magnitude: Float) {
 }
 
 @Composable
-private fun ActivePhaseState(stage: RuntimeStage, title: String, capabilities: Set<Capability>) {
-    val isReflect = stage == RuntimeStage.REFLECT
+private fun AnalyseState(samples: List<Float>) {
+    val average = if (samples.isEmpty()) 0f else samples.average().toFloat()
+    val peak = samples.maxOrNull() ?: 0f
+    val insight = if (samples.size < 4) "Move o dispositivo para recolher uma amostra suficiente." else "Movimento estável durante a maior parte da amostra."
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Eyebrow("CAPSULE · ${if (isReflect) "04" else "03"} / 04")
-        Text(title, color = Navy, fontSize = 34.sp, fontWeight = FontWeight.Bold)
-        Text(if (isReflect) "Comunicar conclusões e propor soluções." else "Tratar os dados e encontrar padrões.", color = Muted, fontSize = 18.sp, lineHeight = 25.sp)
+        Eyebrow("CAPSULE · 03 / 04")
+        Text("Analisar", color = Navy, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+        Text("Os teus dados tornam-se evidência.", color = Muted, fontSize = 18.sp, lineHeight = 25.sp)
         BlueRule()
-        FeatureCard(if (isReflect) Icons.Outlined.Eco else Icons.Outlined.Insights, if (isReflect) "reflectir" else "analisar", if (isReflect) "Desenvolver hábitos para um uso mais consciente." else "Perceber padrões e identificar oportunidades.") {
-            Text(if (isReflect) "O que concluis?" else "Padrão de movimento", color = Navy, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        FeatureCard(Icons.Outlined.Insights, "analisar", "Leitura local da amostra recolhida.") {
+            Text("Padrão de movimento", color = Navy, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
-            Text(if (isReflect) "Regista a tua ideia principal e fecha o ciclo da experiência." else "A Capsule prepara os dados recolhidos para apoiar a tua leitura.", color = Muted, fontSize = 15.sp, lineHeight = 21.sp)
-            if (capabilities.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
-                CapabilityLine(capabilities)
+            Text(insight, color = Muted, fontSize = 15.sp, lineHeight = 21.sp)
+            Spacer(Modifier.height(14.dp))
+            SensorChart(samples)
+            Spacer(Modifier.height(12.dp))
+            Text(String.format(Locale.US, "Média %.2f m/s² · Pico %.2f m/s²", average, peak), color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        }
+        PhaseProgress(active = 2)
+    }
+}
+
+@Composable
+private fun ReflectState(capsuleId: String?, store: ReflectionStore) {
+    var reflection by remember(capsuleId) { mutableStateOf(store.load(capsuleId)) }
+    var saved by remember(capsuleId) { mutableStateOf(reflection.isNotBlank()) }
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Eyebrow("CAPSULE · 04 / 04")
+        Text("Reflectir", color = Navy, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+        Text("Fecha a experiência com uma conclusão tua.", color = Muted, fontSize = 18.sp, lineHeight = 25.sp)
+        BlueRule()
+        FeatureCard(Icons.Outlined.EditNote, "exit ticket", "A resposta fica guardada apenas neste dispositivo para a aula.") {
+            Text("O que concluis?", color = Navy, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(value = reflection, onValueChange = { reflection = it; saved = false }, placeholder = { Text("Escreve a tua conclusão…") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+            Spacer(Modifier.height(10.dp))
+            Button(onClick = { store.save(capsuleId, reflection); saved = reflection.isNotBlank() }, enabled = reflection.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(12.dp)) {
+                Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(17.dp))
+                Spacer(Modifier.width(7.dp))
+                Text(if (saved) "Conclusão guardada" else "Guardar conclusão", fontWeight = FontWeight.Bold)
             }
         }
-        PhaseProgress(active = if (isReflect) 3 else 2)
+        PhaseProgress(active = 3)
+    }
+}
+
+@Composable
+private fun BreakState(onFinish: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Eyebrow("MORPH · INTERVALO")
+        Text("O telefone\nvoltou a ser teu.", color = Navy, fontSize = 33.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold)
+        Text("A Capsule terminou e todas as restrições pedagógicas foram removidas. Próxima aula: 10:15.", color = Muted, fontSize = 17.sp, lineHeight = 24.sp)
+        BlueRule()
+        FeatureCard(Icons.Outlined.Eco, "autonomia", "Sem política activa.") {
+            Text("Usa normalmente ou guarda o telefone por alguns minutos. A escolha é tua.", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Button(onClick = onFinish, colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text("Usar normalmente", fontWeight = FontWeight.Bold)
+        }
     }
 }
 

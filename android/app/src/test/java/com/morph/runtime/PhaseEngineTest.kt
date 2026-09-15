@@ -2,13 +2,16 @@ package com.morph.runtime
 
 import com.morph.runtime.domain.Capability
 import com.morph.runtime.domain.BubbleStatus
+import com.morph.runtime.domain.DeviceEnrollment
 import com.morph.runtime.domain.GeoPoint
+import com.morph.runtime.domain.AuthorityState
 import com.morph.runtime.domain.LessonCapsule
 import com.morph.runtime.domain.Phase
 import com.morph.runtime.domain.PhaseEngine
 import com.morph.runtime.domain.PhaseType
 import com.morph.runtime.domain.PolicyState
 import com.morph.runtime.domain.RuntimeStage
+import com.morph.runtime.domain.SchoolContext
 import com.morph.runtime.domain.SchoolBubble
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -16,8 +19,22 @@ import org.junit.Test
 
 class PhaseEngineTest {
     @Test
+    fun `unenrolled device remains passive after receiving a Capsule`() {
+        val engine = PhaseEngine { 1234L }
+        engine.receive(capsule())
+        engine.markReady()
+        engine.setEnrollment(DeviceEnrollment.UNENROLLED)
+
+        assertEquals(RuntimeStage.IDLE, engine.state.value.stage)
+        assertEquals(SchoolContext.OUTSIDE_SCHOOL, engine.state.value.schoolContext)
+        assertEquals(AuthorityState.PASSIVE, engine.state.value.authority)
+        assertTrue(engine.activeCapabilities.value.isEmpty())
+    }
+
+    @Test
     fun `phase transition activates new capabilities and end clears policy`() {
         val engine = PhaseEngine { 1234L }
+        engine.setEnrollment(DeviceEnrollment.ENROLLED)
         engine.receive(capsule())
         assertEquals(RuntimeStage.CAPSULE_RECEIVED, engine.state.value.stage)
         engine.markReady()
@@ -33,9 +50,11 @@ class PhaseEngineTest {
         assertEquals(1234L, engine.state.value.monotonicStartedAtMs)
 
         engine.end()
-        assertEquals(RuntimeStage.FINISHED, engine.state.value.stage)
+        assertEquals(RuntimeStage.BREAK, engine.state.value.stage)
         assertTrue(engine.activeCapabilities.value.isEmpty())
         assertEquals(null, PolicyState.current())
+        engine.finishBreak()
+        assertEquals(RuntimeStage.FINISHED, engine.state.value.stage)
     }
 
     @Test
@@ -48,6 +67,7 @@ class PhaseEngineTest {
     @Test
     fun `demo-ready School Bubble starts immediately without location`() {
         val engine = PhaseEngine { 1234L }
+        engine.setEnrollment(DeviceEnrollment.ENROLLED)
         engine.receive(capsule(SchoolBubble("bubble", "Colégio Horizonte", GeoPoint(-8.83, 13.23), 180, 100, 300)))
         engine.markReady()
 
@@ -60,7 +80,54 @@ class PhaseEngineTest {
         assertEquals(RuntimeStage.UNDERSTAND, engine.state.value.stage)
 
         engine.setBubbleStatus(BubbleStatus.OUTSIDE)
-        assertEquals(RuntimeStage.READY, engine.state.value.stage)
+        assertEquals(RuntimeStage.IDLE, engine.state.value.stage)
+        assertEquals(SchoolContext.OUTSIDE_SCHOOL, engine.state.value.schoolContext)
+        assertEquals(AuthorityState.PASSIVE, engine.state.value.authority)
+        assertTrue(engine.activeCapabilities.value.isEmpty())
+        assertEquals(null, PolicyState.current())
+    }
+
+    @Test
+    fun `verified context cancels the unverified expiry deadline`() {
+        var now = 1234L
+        val engine = PhaseEngine { now }
+        engine.setEnrollment(DeviceEnrollment.ENROLLED)
+        engine.receive(capsule(SchoolBubble("bubble", "Colégio Horizonte", GeoPoint(-8.83, 13.23), 180, 100, 300)))
+        engine.markReady()
+        engine.setBubbleStatus(BubbleStatus.DEMO_READY)
+        engine.start()
+        engine.setSchoolContext(SchoolContext.SCHOOL_UNVERIFIED)
+        engine.setSchoolContext(SchoolContext.SCHOOL_VERIFIED)
+
+        now += 300_000L
+        assertTrue(!engine.expireUnverifiedContext())
+        assertEquals(RuntimeStage.UNDERSTAND, engine.state.value.stage)
+    }
+
+    @Test
+    fun `unverified context preserves an active capsule until safe expiry or end`() {
+        var now = 1234L
+        val engine = PhaseEngine { now }
+        engine.setEnrollment(DeviceEnrollment.ENROLLED)
+        engine.receive(capsule(SchoolBubble("bubble", "Colégio Horizonte", GeoPoint(-8.83, 13.23), 180, 100, 300)))
+        engine.markReady()
+        engine.setBubbleStatus(BubbleStatus.DEMO_READY)
+        engine.start()
+
+        engine.setSchoolContext(SchoolContext.SCHOOL_UNVERIFIED)
+
+        assertEquals(RuntimeStage.UNDERSTAND, engine.state.value.stage)
+        assertEquals(SchoolContext.SCHOOL_UNVERIFIED, engine.state.value.schoolContext)
+        assertEquals(AuthorityState.CAPSULE_ACTIVE, engine.state.value.authority)
+        assertTrue(engine.activeCapabilities.value.contains(Capability.GUIDED_EXPLANATION))
+
+        engine.transitionTo(PhaseType.MEASURE)
+        assertEquals(RuntimeStage.MEASURE, engine.state.value.stage)
+        assertTrue(engine.activeCapabilities.value.contains(Capability.ACCELEROMETER))
+
+        now += 300_000L
+        assertTrue(engine.expireUnverifiedContext())
+        assertEquals(RuntimeStage.BREAK, engine.state.value.stage)
         assertTrue(engine.activeCapabilities.value.isEmpty())
         assertEquals(null, PolicyState.current())
     }
@@ -68,6 +135,7 @@ class PhaseEngineTest {
     @Test
     fun `each phase exposes only its pedagogical applications`() {
         val engine = PhaseEngine { 1234L }
+        engine.setEnrollment(DeviceEnrollment.ENROLLED)
         engine.receive(capsule())
         engine.markReady()
         engine.start()

@@ -9,6 +9,16 @@ const port = Number(process.env.PORT ?? 8787);
 const fixtureCapsule = JSON.parse(await readFile(join(root, process.env.MORPH_CAPSULE_FILE ?? "fixtures/physics-capsule.json"), "utf8"));
 const stateFile = process.env.MORPH_STATE_FILE ?? join(root, ".morph-session-state.json");
 const classId = process.env.MORPH_CLASS_ID ?? "10A-FISICA";
+const demoEnrollment = {
+  schoolId: "school-horizonte",
+  classId,
+  studentId: "demo-student",
+  studentName: "Aluno demo",
+  deviceId: null,
+  deviceName: null,
+  pairingCode: process.env.MORPH_DEMO_PAIRING_CODE ?? "MORPH-2026",
+  state: "PENDING"
+};
 const persistedState = await readFile(stateFile, "utf8")
   .then((raw) => JSON.parse(raw))
   .catch(() => ({}));
@@ -31,6 +41,8 @@ const acknowledgedEventIds = new Set(
 let phaseIndex = Number.isInteger(persistedState.phaseIndex) ? persistedState.phaseIndex : 0;
 let running = persistedState.capsuleId === capsule.id && persistedState.running === true;
 const sentinelTimeline = Array.isArray(persistedState.sentinelTimeline) ? persistedState.sentinelTimeline : [];
+let enrollment = { ...demoEnrollment, ...(persistedState.enrollment ?? {}) };
+let schoolContext = persistedState.schoolContext ?? "SCHOOL_VERIFIED";
 let persistChain = Promise.resolve();
 
 function persistSessionState() {
@@ -39,6 +51,8 @@ function persistSessionState() {
     capsule,
     phaseIndex,
     running,
+    enrollment,
+    schoolContext,
     acknowledgedEventIds: [...acknowledgedEventIds],
     sentinelTimeline
   }) + "\n";
@@ -64,11 +78,54 @@ function stateMessage() {
     type: "session:state",
     capsuleId: capsule.id,
     running,
-    phase: running ? currentPhase()?.id ?? "FINISHED" : "FINISHED"
+    phase: running ? currentPhase()?.id ?? "FINISHED" : "FINISHED",
+    schoolContext
   };
 }
 
+function enrollmentMessage() {
+  return { type: "enrollment:status", enrollment };
+}
+
+function schoolContextMessage() {
+  return { type: "school:context", state: schoolContext };
+}
+
+function pairDevice(candidate = {}) {
+  if (candidate.code !== enrollment.pairingCode) throw new Error("Código de associação inválido.");
+  enrollment = {
+    ...enrollment,
+    deviceId: String(candidate.deviceId || "morph-demo-android"),
+    deviceName: String(candidate.deviceName || "Android Morph"),
+    state: "PAIRED"
+  };
+  void persistSessionState();
+  broadcast(enrollmentMessage());
+  broadcast(schoolContextMessage());
+  return enrollment;
+}
+
+function resetDemo() {
+  capsule = prepareCapsule(fixtureCapsule);
+  phaseIndex = 0;
+  running = false;
+  schoolContext = "SCHOOL_VERIFIED";
+  enrollment = { ...demoEnrollment };
+  deviceStatuses.clear();
+  acknowledgedEventIds.clear();
+  sentinelTimeline.splice(0, sentinelTimeline.length);
+  void persistSessionState();
+  broadcast({ type: "capsule:assigned", capsule });
+  broadcast(stateMessage());
+  broadcast(enrollmentMessage());
+  broadcast(schoolContextMessage());
+  return { session: stateMessage(), enrollment };
+}
+
 function startSession() {
+  if (schoolContext !== "SCHOOL_VERIFIED") {
+    throw new Error("A Capsule só pode começar num contexto escolar verificado.");
+  }
   phaseIndex = 0;
   running = true;
   void persistSessionState();
@@ -121,7 +178,33 @@ const server = createServer(async (request, response) => {
   }
   if (request.method === "GET" && request.url === "/bridge/status") {
     response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
-    response.end(JSON.stringify({ session: stateMessage(), devices: [...deviceStatuses.values()], events: sentinelTimeline }));
+    response.end(JSON.stringify({ session: stateMessage(), enrollment, devices: [...deviceStatuses.values()], events: sentinelTimeline }));
+    return;
+  }
+  if (request.method === "POST" && request.url === "/bridge/enrollment") {
+    try {
+      const body = await readJson(request);
+      if (body.action === "pair") {
+        response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ enrollment: pairDevice(body) }));
+      } else if (body.action === "reset") {
+        enrollment = { ...demoEnrollment };
+        void persistSessionState();
+        broadcast(enrollmentMessage());
+        response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ enrollment }));
+      } else {
+        throw new Error("Invalid enrollment action");
+      }
+    } catch (error) {
+      response.writeHead(400, { "content-type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify({ error: error.message }));
+    }
+    return;
+  }
+  if (request.method === "POST" && request.url === "/bridge/reset") {
+    response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+    response.end(JSON.stringify(resetDemo()));
     return;
   }
   if (request.method === "POST" && request.url === "/bridge/capsule") {
@@ -149,6 +232,20 @@ const server = createServer(async (request, response) => {
       if (command === "start") startSession();
       else if (command === "next") advanceSession();
       else if (command === "end") endSession();
+      else if (command === "context:outside") {
+        schoolContext = "OUTSIDE_SCHOOL";
+        void persistSessionState();
+        broadcast(schoolContextMessage());
+        endSession();
+      } else if (command === "context:unverified") {
+        schoolContext = "SCHOOL_UNVERIFIED";
+        void persistSessionState();
+        broadcast(schoolContextMessage());
+      } else if (command === "context:verified") {
+        schoolContext = "SCHOOL_VERIFIED";
+        void persistSessionState();
+        broadcast(schoolContextMessage());
+      }
       else throw new Error("Invalid teacher command");
       response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
       response.end(JSON.stringify(stateMessage()));
@@ -177,12 +274,18 @@ websocket.on("connection", (socket) => {
   clients.add(socket);
   socket.send(JSON.stringify({ type: "capsule:assigned", capsule }));
   socket.send(JSON.stringify(stateMessage()));
+  socket.send(JSON.stringify(enrollmentMessage()));
+  socket.send(JSON.stringify(schoolContextMessage()));
   socket.on("message", (raw) => {
     let message;
     try { message = JSON.parse(raw.toString()); } catch { return; }
 
     if (message.type === "teacher:start") {
-      startSession();
+      try {
+        startSession();
+      } catch (error) {
+        socket.send(JSON.stringify({ type: "session:error", error: error instanceof Error ? error.message : "A Capsule não pode começar." }));
+      }
       return;
     }
     if (message.type === "teacher:next" && running) {
@@ -191,6 +294,14 @@ websocket.on("connection", (socket) => {
     }
     if (message.type === "teacher:end" && running) {
       endSession();
+      return;
+    }
+    if (message.type === "enrollment:pair") {
+      try {
+        socket.send(JSON.stringify({ type: "enrollment:paired", enrollment: pairDevice(message) }));
+      } catch (error) {
+        socket.send(JSON.stringify({ type: "enrollment:error", error: error.message }));
+      }
       return;
     }
     if (message.type === "sentinel:event") {
@@ -205,7 +316,15 @@ websocket.on("connection", (socket) => {
       return;
     }
     if (message.type === "device:status") {
-      const status = { ...message, classId: message.classId ?? classId, receivedAt: Date.now() };
+      const status = {
+        ...message,
+        schoolId: enrollment.schoolId,
+        classId: enrollment.classId,
+        studentId: enrollment.studentId,
+        deviceId: enrollment.deviceId ?? message.deviceId,
+        enrollment: enrollment.state,
+        receivedAt: Date.now()
+      };
       deviceStatuses.set(status.studentId ?? "unknown", status);
       broadcast({ type: "device:status", status });
     }

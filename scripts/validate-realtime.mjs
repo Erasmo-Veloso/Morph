@@ -70,6 +70,17 @@ try {
   await nextMessage((message) => message.type === "capsule:assigned");
   await nextMessage((message) => message.type === "session:state");
 
+  const pairingResponse = await fetch(`${baseUrl}/bridge/enrollment`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "pair", code: "MORPH-2026", deviceId: "validate-device", deviceName: "Validation Android" })
+  });
+  const pairing = await pairingResponse.json();
+  if (!pairingResponse.ok || pairing.enrollment?.state !== "PAIRED" || pairing.enrollment?.studentId !== "demo-student") {
+    throw new Error("Enrollment pairing did not bind the demo device to the demo student");
+  }
+  await nextMessage((message) => message.type === "enrollment:status" && message.enrollment.state === "PAIRED");
+
   const fixture = JSON.parse(await readFile("fixtures/physics-capsule.json", "utf8"));
   const capsuleResponse = await fetch(`${baseUrl}/bridge/capsule`, {
     method: "POST",
@@ -116,6 +127,17 @@ try {
   }));
   const deviceStatus = await nextMessage((message) => message.type === "device:status");
   if (deviceStatus.status.classId !== "10A-FISICA") throw new Error("Expected classId in device status");
+  if (deviceStatus.status.studentId !== "demo-student" || deviceStatus.status.enrollment !== "PAIRED") {
+    throw new Error("Device status was not reconciled with the enrollment association");
+  }
+
+  const unverifiedResponse = await fetch(`${baseUrl}/bridge/command`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ command: "context:unverified" })
+  });
+  if (!unverifiedResponse.ok) throw new Error("Bridge did not accept the unverified context transition");
+  await nextMessage((message) => message.type === "school:context" && message.state === "SCHOOL_UNVERIFIED");
 
   const eventId = randomUUID();
   const event = { id: eventId, studentId: "validate-student", capsuleId: changed.capsuleId, phaseId: changed.phase.id, type: "CONNECTIVITY_CHANGED", occurredAt: Date.now(), payload: "state=LOCAL" };
@@ -142,6 +164,12 @@ try {
   });
   if (!endResponse.ok) throw new Error("Bridge end command failed");
   await nextMessage((message) => message.type === "session:ended");
+
+  const resetResponse = await fetch(`${baseUrl}/bridge/reset`, { method: "POST" });
+  const reset = await resetResponse.json();
+  if (!resetResponse.ok || reset.enrollment?.state !== "PENDING" || reset.session?.phase !== "FINISHED") {
+    throw new Error("Demo reset did not restore the deterministic pending state");
+  }
   console.log("Realtime bridge, teacher flow, and idempotent Sentinel ACK: PASS");
 } finally {
   socket?.close();

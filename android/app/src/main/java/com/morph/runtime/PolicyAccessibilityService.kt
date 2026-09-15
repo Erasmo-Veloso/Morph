@@ -48,6 +48,12 @@ class PolicyAccessibilityService : AccessibilityService() {
         private val systemPackages = setOf(
             "android",
             "com.android.systemui",
+            // Calling and emergency surfaces must remain available regardless
+            // of the active pedagogical policy.
+            "com.android.phone",
+            "com.android.dialer",
+            "com.google.android.dialer",
+            "com.samsung.android.dialer",
             "com.sec.android.app.launcher",
             "com.samsung.android.launcher",
             "com.android.launcher3"

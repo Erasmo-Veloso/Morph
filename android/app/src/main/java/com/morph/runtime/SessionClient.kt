@@ -3,14 +3,17 @@ package com.morph.runtime
 import android.util.Log
 import com.morph.runtime.domain.Connectivity
 import com.morph.runtime.domain.BubbleStatus
+import com.morph.runtime.domain.DeviceEnrollment
 import com.morph.runtime.domain.LessonRuntime
 import com.morph.runtime.domain.PhaseEngine
 import com.morph.runtime.domain.PhaseType
+import com.morph.runtime.domain.SchoolContext
 import com.morph.runtime.data.SentinelRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
 import okhttp3.OkHttpClient
@@ -27,6 +30,7 @@ class SessionClient(
     private val scope: CoroutineScope,
     private val connectivityMonitor: ConnectivityMonitor,
     private val schoolBubbleMonitor: SchoolBubbleMonitor,
+    private val enrollment: DeviceEnrollmentStore,
     private val serverUrl: String = BuildConfig.MORPH_SERVER_URL
 ) {
     private val engine: PhaseEngine get() = runtime.phaseEngine
@@ -38,6 +42,17 @@ class SessionClient(
     private val inFlight = ConcurrentHashMap.newKeySet<String>()
 
     init {
+        scope.launch {
+            while (isActive) {
+                delay(CONTEXT_EXPIRY_POLL_MS)
+                if (!runtime.expireUnverifiedContext()) continue
+                val state = engine.state.value
+                val capsuleId = state.capsuleId ?: continue
+                sentinel.record(capsuleId, "none", "SCHOOL_CONTEXT_EXPIRED", "reason=unverified_context_ttl")
+                syncPending()
+                sendDeviceStatus()
+            }
+        }
         scope.launch {
             schoolBubbleMonitor.status.collect { status ->
                 val previous = engine.state.value.bubbleStatus
@@ -102,16 +117,39 @@ class SessionClient(
                             engine.start()
                             if (engine.state.value.running && engine.state.value.currentPhase?.type != phase) engine.transitionTo(phase)
                         }
-                    } else if (message.optString("phase") == "FINISHED") {
+                    } else if (message.optString("phase") == "FINISHED" && engine.state.value.running) {
                         engine.end()
                     }
+                    sendDeviceStatus()
                 }
-                "session:started" -> engine.start()
+                "session:started" -> {
+                    engine.start()
+                    sendDeviceStatus()
+                }
                 "phase:changed" -> { engine.transitionTo(PhaseType.valueOf(message.getJSONObject("phase").getString("id"))); sendDeviceStatus() }
-                "session:ended" -> { engine.end(); schoolBubbleMonitor.stop() }
+                "session:ended" -> {
+                    if (engine.state.value.running) engine.end()
+                    schoolBubbleMonitor.stop()
+                    sendDeviceStatus()
+                }
                 "session:ack" -> message.optString("eventId").takeIf { it.isNotBlank() }?.let { eventId ->
                     inFlight.remove(eventId)
                     scope.launch { sentinel.markSynced(eventId) }
+                }
+                "enrollment:status", "enrollment:paired" -> handleEnrollment(message.getJSONObject("enrollment"))
+                "enrollment:error" -> Log.w(TAG, message.optString("error", "Não foi possível associar o dispositivo."))
+                "school:context" -> {
+                    val context = runCatching { SchoolContext.valueOf(message.getString("state")) }.getOrNull() ?: return
+                    val previous = engine.state.value.schoolContext
+                    if (engine.state.value.enrollment == DeviceEnrollment.ENROLLED) engine.setSchoolContext(context)
+                    val state = engine.state.value
+                    if (context == SchoolContext.SCHOOL_UNVERIFIED && previous != context && state.capsuleId != null) {
+                        scope.launch {
+                            sentinel.record(state.capsuleId, state.currentPhase?.id ?: "none", "SCHOOL_CONTEXT_LOST", "context=unverified")
+                            syncPending()
+                        }
+                    }
+                    sendDeviceStatus()
                 }
             }
         }.onFailure { Log.e(TAG, "Mensagem realtime inválida", it) }
@@ -132,11 +170,34 @@ class SessionClient(
 
     private fun sendDeviceStatus() {
         val state = engine.state.value
-        socket?.send(JSONObject().put("type", "device:status").put("studentId", "demo-student")
+        socket?.send(JSONObject().put("type", "device:status").put("studentId", enrollment.studentId()).put("deviceId", enrollment.deviceId)
             .put("capsuleId", state.capsuleId).put("phase", state.currentPhase?.type?.name)
             .put("connectivity", state.connectivity.name).put("integrity", state.integrity.name)
             .put("bubbleStatus", state.bubbleStatus.name).put("bubbleName", state.schoolBubbleName)
+            .put("enrollment", state.enrollment.name).put("schoolContext", state.schoolContext.name).put("authority", state.authority.name)
             .put("lastSeen", System.currentTimeMillis()).toString())
+    }
+
+    fun pairDevice(code: String) {
+        socket?.send(JSONObject().put("type", "enrollment:pair").put("code", code.trim()).put("deviceId", enrollment.deviceId).put("deviceName", "Android Morph").toString())
+    }
+
+    fun finishBreak() {
+        runtime.finishBreak()
+        sendDeviceStatus()
+    }
+
+    private fun handleEnrollment(value: JSONObject) {
+        if (value.optString("state") != "PAIRED") {
+            enrollment.clear()
+            engine.setEnrollment(DeviceEnrollment.UNENROLLED)
+            sendDeviceStatus()
+            return
+        }
+        enrollment.markPaired(value.optString("studentId", "demo-student"))
+        engine.setEnrollment(DeviceEnrollment.ENROLLED)
+        schoolBubbleMonitor.updateBubble(runtime.currentSchoolBubble())
+        sendDeviceStatus()
     }
 
     fun syncPending() {
@@ -155,5 +216,8 @@ class SessionClient(
         }
     }
 
-    companion object { private const val TAG = "MorphSession" }
+    companion object {
+        private const val TAG = "MorphSession"
+        private const val CONTEXT_EXPIRY_POLL_MS = 1_000L
+    }
 }

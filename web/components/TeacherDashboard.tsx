@@ -32,6 +32,20 @@ import type { RuntimeStatus } from "@/lib/runtime-bridge";
 const defaultIntent =
   "Ensinar movimento acelerado com uma explicação breve, experimento prático, análise de resultados e reflexão.";
 
+const runtimeEventLabel: Record<string, string> = {
+  RESTRICTED_ACCESS_ATTEMPT: "Tentativa fora da etapa",
+  SCHOOL_CONTEXT_LOST: "Contexto por confirmar",
+  CONNECTIVITY_CHANGED: "Conectividade actualizada",
+  POLICY_PERMISSION_CHANGED: "Permissão de protecção alterada",
+  SCHOOL_BUBBLE_CHANGED: "School Bubble actualizada"
+};
+
+const priorityRuntimeEventTypes = new Set([
+  "RESTRICTED_ACCESS_ATTEMPT",
+  "SCHOOL_CONTEXT_LOST",
+  "POLICY_PERMISSION_CHANGED"
+]);
+
 const phaseMeta: Record<
   PhaseId,
   { label: string; description: string; detail: string; icon: ComponentType<{ size?: number; strokeWidth?: number }> }
@@ -141,6 +155,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatus | null>(null);
   const [appCatalog, setAppCatalog] = useState<ApprovedApp[]>([]);
+  const [school, setSchool] = useState<SchoolConfig | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const presentationRef = useRef<HTMLElement>(null);
 
@@ -160,8 +175,8 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   useEffect(() => {
     void fetch("/api/school", { cache: "no-store" })
       .then((response) => response.json())
-      .then((payload: { school?: SchoolConfig }) => setAppCatalog(payload.school?.appCatalog ?? []))
-      .catch(() => setAppCatalog([]));
+      .then((payload: { school?: SchoolConfig }) => { setSchool(payload.school ?? null); setAppCatalog(payload.school?.appCatalog ?? []); })
+      .catch(() => { setSchool(null); setAppCatalog([]); });
   }, []);
 
   const activePhase = useMemo(() => {
@@ -175,7 +190,12 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const isLastPhase = presentationIndex === capsule.phases.length - 1;
   const PhaseIcon = phaseMeta[presentationPhase.id].icon;
   const runtimeDevice = runtimeStatus?.devices.at(-1);
-  const latestRuntimeEvent = runtimeStatus?.events.at(-1);
+  const runtimeEvents = runtimeStatus?.events.slice().reverse() ?? [];
+  const latestRuntimeEvent = runtimeEvents.find((event) => priorityRuntimeEventTypes.has(event.type))
+    ?? runtimeEvents.find((event) => event.type !== "SCHOOL_BUBBLE_CHANGED")
+    ?? runtimeEvents[0];
+  const enrollment = runtimeStatus?.enrollment;
+  const demoTeacher = school?.teachers.find((teacher) => teacher.id === "teacher-ana") ?? school?.teachers[0];
 
   useEffect(() => {
     const root = presentationRef.current;
@@ -233,6 +253,10 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
     }
 
     await runAction(() => postJson("/api/session/next"));
+  }
+
+  async function updateSchoolContext(command: "context:verified" | "context:unverified" | "context:outside") {
+    await runAction(() => postJson("/api/session/context", { command }));
   }
 
   function updatePhase(phaseId: PhaseId, changes: Partial<Pick<LearningPhase, "duration" | "capabilities" | "allowed_apps">>) {
@@ -418,10 +442,14 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
               <span>{!session ? "A Cápsula está pronta para ser enviada ao dispositivo." : "O dispositivo atualiza-se imediatamente."}</span>
             </div>
             {session ? <section className="runtime-live" aria-label="Estado real do Android" data-enter>
+              <div><span>Turma</span><strong>{demoTeacher ? `${demoTeacher.className} · ${demoTeacher.studentIds.length} alunos` : "A CARREGAR"}</strong></div>
+              <div><span>Aluno · turma</span><strong>{enrollment ? `${enrollment.studentName} · ${enrollment.classId}` : "A CONFIRMAR"}</strong></div>
+              <div><span>Dispositivo</span><strong>{enrollment?.state === "PAIRED" ? (enrollment.deviceName ?? "ASSOCIADO") : "AGUARDA CÓDIGO"}</strong></div>
               <div><span>Android</span><strong>{runtimeDevice?.phase ?? "A AGUARDAR DEVICE"}</strong></div>
               <div><span>Conectividade</span><strong>{runtimeDevice?.connectivity ?? "SEM DISPOSITIVO"}</strong></div>
-              <div><span>School Bubble</span><strong>{runtimeDevice?.bubbleStatus ?? "A CONFIRMAR"}</strong></div>
-              <div><span>Sentinel</span><strong>{latestRuntimeEvent?.type ?? "SEM EVENTOS"}</strong></div>
+              <div><span>Contexto escolar</span><strong>{runtimeDevice?.schoolContext ?? "A CONFIRMAR DISPOSITIVO"}</strong></div>
+              <div><span>Sentinel</span><strong>{latestRuntimeEvent ? (runtimeEventLabel[latestRuntimeEvent.type] ?? latestRuntimeEvent.type) : "SEM EVENTOS"}</strong></div>
+              <div className="runtime-context-actions"><span>Rehearsal de contexto</span><p><button type="button" disabled={isBusy} onClick={() => void updateSchoolContext("context:unverified")}>Contexto não verificado</button><button type="button" disabled={isBusy} onClick={() => void updateSchoolContext("context:outside")}>Saída da escola</button><button type="button" disabled={isBusy} onClick={() => void updateSchoolContext("context:verified")}>Contexto verificado</button></p></div>
             </section> : null}
             {errorMessage ? <p className="action-error" role="alert">{errorMessage}</p> : null}
           </section>

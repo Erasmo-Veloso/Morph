@@ -14,6 +14,10 @@ class LessonRuntime(
     fun start() { phaseEngine.start() }
     fun transitionTo(phase: PhaseType) { phaseEngine.transitionTo(phase) }
     fun end() { phaseEngine.end() }
+    fun finishBreak() { phaseEngine.finishBreak() }
     fun setConnectivity(value: Connectivity) { phaseEngine.setConnectivity(value) }
+    fun setEnrollment(value: DeviceEnrollment) { phaseEngine.setEnrollment(value) }
+    fun setSchoolContext(value: SchoolContext) { phaseEngine.setSchoolContext(value) }
+    fun expireUnverifiedContext(): Boolean = phaseEngine.expireUnverifiedContext()
     fun currentSchoolBubble(): SchoolBubble? = phaseEngine.currentSchoolBubble()
 }

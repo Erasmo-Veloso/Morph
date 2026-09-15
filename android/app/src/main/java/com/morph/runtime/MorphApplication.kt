@@ -11,17 +11,20 @@ import kotlinx.coroutines.cancel
 
 class MorphApplication : Application() {
     val scope = CoroutineScope(SupervisorJob())
-    val sentinel by lazy { SentinelRepository(this) }
+    val enrollment by lazy { DeviceEnrollmentStore(this) }
+    val reflections by lazy { ReflectionStore(this) }
+    val sentinel by lazy { SentinelRepository(this) { enrollment.studentId() } }
     val runtime by lazy { LessonRuntime() }
     val engine get() = runtime.phaseEngine
     val accelerometer by lazy { AccelerometerEngine(this) }
     val connectivityMonitor by lazy { ConnectivityMonitor(this) }
     val schoolBubbleMonitor by lazy { SchoolBubbleMonitor() }
-    val session by lazy { SessionClient(runtime, sentinel, scope, connectivityMonitor, schoolBubbleMonitor) }
+    val session by lazy { SessionClient(runtime, sentinel, scope, connectivityMonitor, schoolBubbleMonitor, enrollment) }
 
     override fun onCreate() {
         super.onCreate()
         instance = this
+        runtime.setEnrollment(enrollment.state())
         session.connect()
     }
 

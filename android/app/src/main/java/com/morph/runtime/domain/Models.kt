@@ -6,9 +6,12 @@ enum class Capability {
     CHRONOMETER, COLLECTED_DATA, GRAPH, CALCULATOR, EXIT_TICKET
 }
 enum class Connectivity { ONLINE, LOCAL, ISOLATED }
-enum class Integrity { VERIFIED, UNVERIFIED }
+enum class Integrity { VERIFIED, WARNING, NON_COMPLIANT }
+enum class DeviceEnrollment { UNENROLLED, ENROLLED }
+enum class SchoolContext { OUTSIDE_SCHOOL, SCHOOL_VERIFIED, SCHOOL_UNVERIFIED }
+enum class AuthorityState { PASSIVE, SCHOOL_IDLE, CAPSULE_ACTIVE, BREAK }
 enum class BubbleStatus { NOT_REQUIRED, DEMO_READY, CHECKING, INSIDE, OUTSIDE, UNKNOWN }
-enum class RuntimeStage { IDLE, CAPSULE_RECEIVED, READY, UNDERSTAND, MEASURE, ANALYSE, REFLECT, FINISHED }
+enum class RuntimeStage { IDLE, CAPSULE_RECEIVED, READY, UNDERSTAND, MEASURE, ANALYSE, REFLECT, BREAK, FINISHED }
 
 data class GeoPoint(val latitude: Double, val longitude: Double)
 
@@ -60,7 +63,11 @@ data class RuntimeState(
     val capsuleId: String? = null,
     val currentPhase: Phase? = null,
     val connectivity: Connectivity = Connectivity.ISOLATED,
-    val integrity: Integrity = Integrity.UNVERIFIED,
+    val integrity: Integrity = Integrity.WARNING,
+    val enrollment: DeviceEnrollment = DeviceEnrollment.UNENROLLED,
+    val schoolContext: SchoolContext = SchoolContext.OUTSIDE_SCHOOL,
+    val authority: AuthorityState = AuthorityState.PASSIVE,
+    val schoolContextExpiresAtMs: Long? = null,
     val bubbleStatus: BubbleStatus = BubbleStatus.NOT_REQUIRED,
     val schoolBubbleName: String? = null,
     val running: Boolean = false,

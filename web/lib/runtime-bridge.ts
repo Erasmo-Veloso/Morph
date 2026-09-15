@@ -1,6 +1,6 @@
 import type { LearningCapsule } from "./capsule";
 
-export type RuntimeCommand = "start" | "next" | "end";
+export type RuntimeCommand = "start" | "next" | "end" | "context:outside" | "context:unverified" | "context:verified";
 
 export type RuntimeStatus = {
   session: {
@@ -8,14 +8,30 @@ export type RuntimeStatus = {
     capsuleId: string;
     running: boolean;
     phase: string;
+    schoolContext?: "OUTSIDE_SCHOOL" | "SCHOOL_VERIFIED" | "SCHOOL_UNVERIFIED";
+  };
+  enrollment: {
+    schoolId: string;
+    classId: string;
+    studentId: string;
+    studentName: string;
+    deviceId: string | null;
+    deviceName: string | null;
+    pairingCode: string;
+    state: "PENDING" | "PAIRED";
   };
   devices: Array<{
+    schoolId?: string;
     studentId: string;
     classId: string;
+    deviceId?: string;
+    enrollment?: "PENDING" | "PAIRED";
     phase?: string;
     connectivity: "ONLINE" | "LOCAL" | "ISOLATED";
     integrity: string;
     bubbleStatus?: "NOT_REQUIRED" | "CHECKING" | "INSIDE" | "OUTSIDE" | "UNKNOWN";
+    schoolContext?: "OUTSIDE_SCHOOL" | "SCHOOL_VERIFIED" | "SCHOOL_UNVERIFIED";
+    authority?: "PASSIVE" | "SCHOOL_IDLE" | "CAPSULE_ACTIVE" | "BREAK";
     bubbleName?: string;
     lastSeen: number;
     receivedAt: number;

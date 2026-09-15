@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit --pretty false",
+    "test": "npm run validate",
     "validate": "npm run typecheck && tsx scripts/validate-contract.ts && node scripts/validate.mjs && node scripts/validate-realtime.mjs && node scripts/validate-session-persistence.mjs",
+    "demo:reset": "node scripts/demo-reset.mjs",
+    "demo:smoke": "node scripts/demo-smoke.mjs",
     "start": "node server/index.mjs"
   },
   "dependencies": {

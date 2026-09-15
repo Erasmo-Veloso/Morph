@@ -25,12 +25,12 @@ const defaultSchool: SchoolConfig = {
     policy: { gps_required: true, max_accuracy_meters: 100, unknown_location_grace_seconds: 300 }
   },
   teachers: [
-    { id: "teacher-ana", name: "Prof. Ana Matias", subject: "Física", className: "10.º A", studentIds: ["student-demo", "student-2", "student-3"] },
+    { id: "teacher-ana", name: "Prof. Ana Matias", subject: "Física", className: "10.º A", studentIds: ["demo-student", "student-2", "student-3"] },
     { id: "teacher-joel", name: "Prof. Joel Manuel", subject: "Matemática", className: "9.º B", studentIds: ["student-4", "student-5"] },
     { id: "teacher-lurdes", name: "Prof. Lurdes Paulo", subject: "Biologia", className: "11.º C", studentIds: ["student-6", "student-7"] }
   ],
   students: [
-    { id: "student-demo", name: "Aluno demo", className: "10.º A" },
+    { id: "demo-student", name: "Aluno demo", className: "10.º A" },
     { id: "student-2", name: "Marta Costa", className: "10.º A" },
     { id: "student-3", name: "André Silva", className: "10.º A" },
     { id: "student-4", name: "Nuno Paulo", className: "9.º B" },
