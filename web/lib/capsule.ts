@@ -182,10 +182,10 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
       integrity_policy: {
         enabled: true,
         sentinel_events: [
-          "RESTRICTED_CAPABILITY_REQUESTED",
-          "PERMISSION_CHANGED",
-          "NETWORK_UNAVAILABLE",
-          "LOCAL_QUEUE_SYNCED"
+          "RESTRICTED_ACCESS_ATTEMPT",
+          "CONNECTIVITY_CHANGED",
+          "SCHOOL_CONTEXT_LOST",
+          "POLICY_PERMISSION_CHANGED"
         ],
         privacy: "POLICY_INTEGRITY_ONLY"
       },

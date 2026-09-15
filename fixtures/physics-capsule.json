@@ -42,7 +42,7 @@
   ],
   "integrity_policy": {
     "enabled": true,
-    "sentinel_events": ["RESTRICTED_ACCESS_ATTEMPT", "CONNECTIVITY_CHANGED"],
+    "sentinel_events": ["RESTRICTED_ACCESS_ATTEMPT", "CONNECTIVITY_CHANGED", "SCHOOL_CONTEXT_LOST"],
     "privacy": "POLICY_INTEGRITY_ONLY"
   },
   "offline_policy": {
