@@ -22,7 +22,7 @@ class PhaseEngineTest {
 
         engine.start()
         assertEquals(RuntimeStage.UNDERSTAND, engine.state.value.stage)
-        assertTrue(engine.activeCapabilities.value.contains(Capability.NOTES))
+        assertTrue(engine.activeCapabilities.value.contains(Capability.GUIDED_EXPLANATION))
 
         engine.transitionTo(PhaseType.MEASURE)
         assertEquals(RuntimeStage.MEASURE, engine.state.value.stage)
@@ -43,10 +43,10 @@ class PhaseEngineTest {
     }
 
     private fun capsule() = LessonCapsule(
-        id = "test", version = 1, subject = "Física", topic = "Movimento", classId = "10A", teacherId = "teacher",
-        durationMinutes = 30, phases = listOf(
-            Phase("understand", PhaseType.UNDERSTAND, "Compreender", 5, setOf(Capability.MATERIAL, Capability.NOTES), emptySet(), emptySet()),
+        id = "test", version = 1, objective = "Movimento acelerado", phases = listOf(
+            Phase("understand", PhaseType.UNDERSTAND, "Compreender", 5, setOf(Capability.LEARNING_CONTENT, Capability.GUIDED_EXPLANATION), emptySet(), emptySet()),
             Phase("measure", PhaseType.MEASURE, "Experimentar", 10, setOf(Capability.ACCELEROMETER), setOf("com.example.distraction"), emptySet())
-        ), integrityMonitoring = true, offlineExecution = true, issuedAt = "2026-09-12T00:00:00Z", durationMs = 1800000
+        ), integrityMonitoring = true, offlineExecution = true,
+        validFrom = "2026-09-12T00:00:00Z", validUntil = "2026-09-13T00:00:00Z", signature = "demo"
     )
 }

@@ -2,29 +2,22 @@ import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 
 const capsule = JSON.parse(await readFile(new URL("../fixtures/physics-capsule.json", import.meta.url), "utf8"));
+const phases = ["UNDERSTAND", "MEASURE", "ANALYSE", "REFLECT"];
 
-function parseLessonCapsule(input) {
-  assert.equal(input.version, 1, "unsupported capsule version");
-  assert.ok(input.id && input.issuedAt && input.durationMs > 0, "metadata is invalid");
-  assert.ok(input.lesson?.subject && input.lesson?.topic, "lesson is invalid");
-  assert.ok(Array.isArray(input.phases) && input.phases.length > 0, "phases are required");
-  const types = new Set(input.phases.map((phase) => phase.type));
-  assert.equal(types.size, input.phases.length, "phase types must be unique");
-  for (const phase of input.phases) {
-    assert.ok(["UNDERSTAND", "MEASURE", "ANALYSE", "REFLECT"].includes(phase.type), `invalid phase ${phase.type}`);
-    assert.ok(phase.durationMinutes > 0, `${phase.type} duration is invalid`);
-    assert.ok(Array.isArray(phase.capabilities), `${phase.type} capabilities are invalid`);
-    assert.ok(Array.isArray(phase.restrictions?.packages), `${phase.type} restrictions are invalid`);
-  }
-  return input;
+assert.equal(capsule.version, 1);
+assert.ok(capsule.id && capsule.objective && capsule.valid_from && capsule.valid_until);
+assert.deepEqual(capsule.phases.map(({ id }) => id), phases);
+assert.equal(new Set(capsule.phases.map(({ id }) => id)).size, capsule.phases.length);
+assert.ok(capsule.phases.find(({ id }) => id === "MEASURE").capabilities.includes("ACCELEROMETER"));
+assert.equal(capsule.integrity_policy.enabled, true);
+assert.equal(capsule.offline_policy.enabled, true);
+for (const phase of capsule.phases) {
+  assert.ok(phase.duration > 0);
+  assert.ok(Array.isArray(phase.capabilities));
+  assert.ok(Array.isArray(phase.restrictions));
+  assert.ok(Array.isArray(phase.learning_assets));
 }
 
-const result = parseLessonCapsule(capsule);
-assert.deepEqual(result.phases.map(({ type }) => type), ["UNDERSTAND", "MEASURE", "ANALYSE", "REFLECT"]);
-assert.ok(result.phases.find(({ type }) => type === "MEASURE").capabilities.includes("ACCELEROMETER"));
-assert.throws(() => parseLessonCapsule({ ...capsule, version: 99 }), /unsupported capsule version/);
-assert.throws(() => parseLessonCapsule({ ...capsule, phases: [{ ...capsule.phases[0], type: "BROKEN" }] }), /invalid phase/);
-assert.throws(() => parseLessonCapsule({ ...capsule, phases: [capsule.phases[0], capsule.phases[0]] }), /phase types must be unique/);
-console.log("Capsule validation: PASS");
-console.log(`Fixture: ${result.id}`);
-console.log(`Flow: ${result.phases.map(({ type }) => type).join(" -> ")}`);
+console.log("Canonical Capsule fixture: PASS");
+console.log(`Fixture: ${capsule.id}`);
+console.log(`Flow: ${capsule.phases.map(({ id }) => id).join(" -> ")}`);

@@ -74,7 +74,7 @@ class SessionClient(
                     }
                 }
                 "session:started" -> engine.start()
-                "phase:changed" -> { engine.transitionTo(PhaseType.valueOf(message.getJSONObject("phase").getString("type"))); sendDeviceStatus() }
+                "phase:changed" -> { engine.transitionTo(PhaseType.valueOf(message.getJSONObject("phase").getString("id"))); sendDeviceStatus() }
                 "session:ended" -> engine.end()
                 "session:ack" -> message.optString("eventId").takeIf { it.isNotBlank() }?.let { eventId ->
                     inFlight.remove(eventId)

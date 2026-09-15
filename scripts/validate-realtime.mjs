@@ -1,12 +1,17 @@
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import WebSocket from "ws";
 
 const port = 8788;
 const baseUrl = `http://127.0.0.1:${port}`;
+const temporaryDirectory = await mkdtemp(join(tmpdir(), "morph-realtime-"));
+const stateFile = join(temporaryDirectory, "state.json");
 const child = spawn(process.execPath, ["server/index.mjs"], {
-  env: { ...process.env, PORT: String(port) },
+  env: { ...process.env, PORT: String(port), MORPH_STATE_FILE: stateFile },
   stdio: ["ignore", "pipe", "pipe"]
 });
 
@@ -43,7 +48,7 @@ try {
   const initialHealth = await waitForHealth();
   const pageResponse = await fetch(baseUrl);
   const page = await pageResponse.text();
-  if (!pageResponse.ok || !page.includes('id="start"') || !page.includes('Teacher control')) {
+  if (!pageResponse.ok || !page.includes('id="start"') || !page.includes('id="capsule-form"') || !page.includes('id="summary-view"') || !page.includes('Teacher control')) {
     throw new Error("Public teacher page is not functional");
   }
   socket = new WebSocket(`ws://127.0.0.1:${port}/realtime`);
@@ -65,13 +70,41 @@ try {
   await nextMessage((message) => message.type === "capsule:assigned");
   await nextMessage((message) => message.type === "session:state");
 
-  socket.send(JSON.stringify({ type: "teacher:start" }));
-  const started = await nextMessage((message) => message.type === "session:started");
-  if (started.phase.type !== "UNDERSTAND") throw new Error("Expected UNDERSTAND start");
+  const fixture = JSON.parse(await readFile("fixtures/physics-capsule.json", "utf8"));
+  const capsuleResponse = await fetch(`${baseUrl}/bridge/capsule`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ capsule: fixture })
+  });
+  if (!capsuleResponse.ok || (await capsuleResponse.json()).capsuleId !== fixture.id) {
+    throw new Error("Bridge did not accept the canonical Capsule");
+  }
+  await nextMessage((message) => message.type === "capsule:assigned" && message.capsule.id === fixture.id);
 
-  socket.send(JSON.stringify({ type: "teacher:next" }));
+  const invalidCapsuleResponse = await fetch(`${baseUrl}/bridge/capsule`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ capsule: { version: 1, phases: [] } })
+  });
+  if (invalidCapsuleResponse.status !== 400) throw new Error("Bridge accepted an invalid Capsule");
+
+  const startResponse = await fetch(`${baseUrl}/bridge/command`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ command: "start" })
+  });
+  if (!startResponse.ok) throw new Error("Bridge start command failed");
+  const started = await nextMessage((message) => message.type === "session:started");
+  if (started.phase.id !== "UNDERSTAND") throw new Error("Expected UNDERSTAND start");
+
+  const nextResponse = await fetch(`${baseUrl}/bridge/command`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ command: "next" })
+  });
+  if (!nextResponse.ok) throw new Error("Bridge next command failed");
   const changed = await nextMessage((message) => message.type === "phase:changed");
-  if (changed.phase.type !== "MEASURE") throw new Error("Expected MEASURE transition");
+  if (changed.phase.id !== "MEASURE") throw new Error("Expected MEASURE transition");
 
   socket.send(JSON.stringify({
     type: "device:status",
@@ -97,11 +130,22 @@ try {
     throw new Error("Duplicate Sentinel event was not deduplicated");
   }
 
-  socket.send(JSON.stringify({ type: "teacher:end" }));
+  const status = await (await fetch(`${baseUrl}/bridge/status`)).json();
+  if (status.session.phase !== "MEASURE" || status.devices.length !== 1 || status.events.length !== 1) {
+    throw new Error("Bridge status did not expose session, device, and Sentinel state");
+  }
+
+  const endResponse = await fetch(`${baseUrl}/bridge/command`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ command: "end" })
+  });
+  if (!endResponse.ok) throw new Error("Bridge end command failed");
   await nextMessage((message) => message.type === "session:ended");
-  console.log("Realtime teacher flow and idempotent Sentinel ACK: PASS");
+  console.log("Realtime bridge, teacher flow, and idempotent Sentinel ACK: PASS");
 } finally {
   socket?.close();
   child.kill("SIGTERM");
   await delay(100);
+  await rm(temporaryDirectory, { recursive: true, force: true });
 }

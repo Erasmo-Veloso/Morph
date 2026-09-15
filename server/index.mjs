@@ -6,18 +6,25 @@ import { WebSocketServer } from "ws";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const port = Number(process.env.PORT ?? 8787);
-const capsule = JSON.parse(await readFile(join(root, process.env.MORPH_CAPSULE_FILE ?? "fixtures/physics-capsule.json"), "utf8"));
+const fixtureCapsule = JSON.parse(await readFile(join(root, process.env.MORPH_CAPSULE_FILE ?? "fixtures/physics-capsule.json"), "utf8"));
 const stateFile = process.env.MORPH_STATE_FILE ?? join(root, ".morph-session-state.json");
-if (process.env.MORPH_EMULATOR_DEMO === "1") {
-  for (const phase of capsule.phases) {
-    if (!phase.restrictions.packages.includes("com.android.chrome")) phase.restrictions.packages.push("com.android.chrome");
-  }
-}
-const clients = new Set();
-const deviceStatuses = new Map();
+const classId = process.env.MORPH_CLASS_ID ?? "10A-FISICA";
 const persistedState = await readFile(stateFile, "utf8")
   .then((raw) => JSON.parse(raw))
   .catch(() => ({}));
+function prepareCapsule(candidate) {
+  const prepared = structuredClone(candidate);
+  if (process.env.MORPH_EMULATOR_DEMO === "1") {
+    const understand = prepared.phases.find((phase) => phase.id === "UNDERSTAND");
+    if (understand && !understand.restrictions.includes("UNRELATED_BROWSER")) {
+      understand.restrictions.push("UNRELATED_BROWSER");
+    }
+  }
+  return prepared;
+}
+let capsule = prepareCapsule(persistedState.capsule?.version === 1 ? persistedState.capsule : fixtureCapsule);
+const clients = new Set();
+const deviceStatuses = new Map();
 const acknowledgedEventIds = new Set(
   Array.isArray(persistedState.acknowledgedEventIds) ? persistedState.acknowledgedEventIds : []
 );
@@ -29,6 +36,7 @@ let persistChain = Promise.resolve();
 function persistSessionState() {
   const snapshot = JSON.stringify({
     capsuleId: capsule.id,
+    capsule,
     phaseIndex,
     running,
     acknowledgedEventIds: [...acknowledgedEventIds],
@@ -56,8 +64,40 @@ function stateMessage() {
     type: "session:state",
     capsuleId: capsule.id,
     running,
-    phase: running ? currentPhase()?.type ?? "FINISHED" : "FINISHED"
+    phase: running ? currentPhase()?.id ?? "FINISHED" : "FINISHED"
   };
+}
+
+function startSession() {
+  phaseIndex = 0;
+  running = true;
+  void persistSessionState();
+  broadcast({ type: "session:started", capsuleId: capsule.id, phase: currentPhase() });
+}
+
+function advanceSession() {
+  if (!running || phaseIndex >= capsule.phases.length - 1) return;
+  phaseIndex += 1;
+  void persistSessionState();
+  broadcast({ type: "phase:changed", capsuleId: capsule.id, phase: currentPhase() });
+}
+
+function endSession() {
+  if (!running) return;
+  running = false;
+  void persistSessionState();
+  broadcast({ type: "session:ended", capsuleId: capsule.id });
+}
+
+function readJson(request) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    request.on("data", (chunk) => { body += chunk; if (body.length > 1_000_000) reject(new Error("Request too large")); });
+    request.on("end", () => {
+      try { resolve(JSON.parse(body || "{}")); } catch (error) { reject(error); }
+    });
+    request.on("error", reject);
+  });
 }
 
 const server = createServer(async (request, response) => {
@@ -69,6 +109,45 @@ const server = createServer(async (request, response) => {
       sentinelTimelineCount: sentinelTimeline.length,
       connectedClients: clients.size
     }));
+    return;
+  }
+  if (request.method === "GET" && request.url === "/bridge/status") {
+    response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+    response.end(JSON.stringify({ session: stateMessage(), devices: [...deviceStatuses.values()], events: sentinelTimeline }));
+    return;
+  }
+  if (request.method === "POST" && request.url === "/bridge/capsule") {
+    try {
+      const body = await readJson(request);
+      if (body.capsule?.version !== 1 || !Array.isArray(body.capsule.phases) || body.capsule.phases.length === 0) {
+        throw new Error("Invalid Learning Capsule");
+      }
+      capsule = prepareCapsule(body.capsule);
+      phaseIndex = 0;
+      running = false;
+      await persistSessionState();
+      broadcast({ type: "capsule:assigned", capsule });
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify({ capsuleId: capsule.id }));
+    } catch (error) {
+      response.writeHead(400, { "content-type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify({ error: error.message }));
+    }
+    return;
+  }
+  if (request.method === "POST" && request.url === "/bridge/command") {
+    try {
+      const { command } = await readJson(request);
+      if (command === "start") startSession();
+      else if (command === "next") advanceSession();
+      else if (command === "end") endSession();
+      else throw new Error("Invalid teacher command");
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify(stateMessage()));
+    } catch (error) {
+      response.writeHead(400, { "content-type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify({ error: error.message }));
+    }
     return;
   }
   const requested = request.url === "/" ? "/index.html" : request.url;
@@ -95,23 +174,15 @@ websocket.on("connection", (socket) => {
     try { message = JSON.parse(raw.toString()); } catch { return; }
 
     if (message.type === "teacher:start") {
-      phaseIndex = 0;
-      running = true;
-      void persistSessionState();
-      broadcast({ type: "session:started", capsuleId: capsule.id, phase: currentPhase() });
+      startSession();
       return;
     }
     if (message.type === "teacher:next" && running) {
-      if (phaseIndex >= capsule.phases.length - 1) return;
-      phaseIndex += 1;
-      void persistSessionState();
-      broadcast({ type: "phase:changed", capsuleId: capsule.id, phase: currentPhase() });
+      advanceSession();
       return;
     }
     if (message.type === "teacher:end" && running) {
-      running = false;
-      void persistSessionState();
-      broadcast({ type: "session:ended", capsuleId: capsule.id });
+      endSession();
       return;
     }
     if (message.type === "sentinel:event") {
@@ -126,7 +197,7 @@ websocket.on("connection", (socket) => {
       return;
     }
     if (message.type === "device:status") {
-      const status = { ...message, classId: message.classId ?? capsule.lesson.classId, receivedAt: Date.now() };
+      const status = { ...message, classId: message.classId ?? classId, receivedAt: Date.now() };
       deviceStatuses.set(status.studentId ?? "unknown", status);
       broadcast({ type: "device:status", status });
     }

@@ -1,12 +1,24 @@
 # Morph
 
-Executable Learning Capsule for HACKTUDO 2026.
+Executable Learning Capsule for HACKTUDO 2026: the teacher compiles a lesson
+in the Next.js dashboard and the Android runtime changes capabilities as the
+lesson advances.
 
-The first vertical slice is intentionally narrow: teacher start → Android
+The vertical slice is intentionally narrow: teacher start → Android
 `UNDERSTAND` → restricted-package shield → teacher next → Android `MEASURE` →
 real accelerometer graph → end-session cleanup.
 
-## Local control server
+## Teacher dashboard
+
+```bash
+cd web
+npm ci
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+## Android realtime bridge
 
 ```bash
 npm install
@@ -38,10 +50,11 @@ the build. The default URL targets an Android emulator.
 - `contracts/`: versioned TypeScript contract and parser.
 - `fixtures/`: deterministic physics Capsule used when compiler/backend is not
   available.
-- `server/` + `public/`: minimal realtime teacher control.
+- `web/`: canonical teacher dashboard and pedagogical compiler.
+- `server/` + `public/`: Android realtime bridge and diagnostic control.
 - `android/`: Kotlin/Compose runtime, Room queue, sensor and Accessibility
   Shield.
-- `docs/`: architecture, demo procedure and honest implementation status.
+- `docs/`: product, architecture, demo procedure and implementation status.
 
 Android SDK and Gradle are configured and the debug APK builds successfully.
 The Android vertical slice is verified on the `morph-api36` emulator; physical
