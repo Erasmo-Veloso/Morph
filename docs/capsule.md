@@ -19,6 +19,7 @@ LearningCapsule
 │   ├── id
 │   ├── duration
 │   ├── capabilities[]
+│   ├── allowed_apps[] (school-approved apps for this phase)
 │   ├── restrictions[]
 │   ├── learning_assets[]
 │   └── transitions[]
@@ -129,6 +130,13 @@ The runtime must know the current phase and the valid next transition.
 ### 3. Capabilities are phase-specific
 
 Capabilities available in one phase do not automatically remain available in another.
+
+### 3.1. Approved apps are explicit and offline-ready
+
+`allowed_apps` contains the concrete applications selected by the teacher from
+the school's approved catalogue. Each entry carries its Android package names
+(and an optional preferred launch activity), so the local runtime can expose
+shortcuts and enforce the same allowlist without contacting a server.
 
 ### 4. Capsule is temporary
 
