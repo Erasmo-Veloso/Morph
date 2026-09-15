@@ -52,8 +52,13 @@ const globalStore = globalThis as typeof globalThis & { morphSchool?: SchoolConf
 
 function clone<T>(value: T): T { return structuredClone(value); }
 
+/** The in-memory store survives hot reloads and deploys, so a stored school may
+ * predate a field added to the configuration. Fill those gaps from the defaults
+ * instead of serving a half-shaped school to the panels. */
 export function getSchool(): SchoolConfig {
-  globalStore.morphSchool ??= clone(defaultSchool);
+  const defaults = clone(defaultSchool);
+  globalStore.morphSchool = globalStore.morphSchool ? { ...defaults, ...globalStore.morphSchool } : defaults;
+  if (!Array.isArray(globalStore.morphSchool.appCatalog)) globalStore.morphSchool.appCatalog = defaults.appCatalog;
   return clone(globalStore.morphSchool);
 }
 
