@@ -206,6 +206,16 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
   };
 }
 
+/** A Capsule compiled before the school catalogue carries no app selection.
+ * Read that absence as "no application authorised", which is the restrictive
+ * reading, instead of letting a missing field break the studio or the API. */
+export function withApprovedApps(capsule: LearningCapsule): LearningCapsule {
+  return {
+    ...capsule,
+    phases: capsule.phases.map((phase) => ({ ...phase, allowed_apps: phase.allowed_apps ?? [] }))
+  };
+}
+
 export function getNextPhase(capsule: LearningCapsule, currentPhase: PhaseId) {
   const phase = capsule.phases.find((item) => item.id === currentPhase);
   return phase?.transitions.next ?? null;

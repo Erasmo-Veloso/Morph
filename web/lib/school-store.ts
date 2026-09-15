@@ -1,3 +1,4 @@
+import { withApprovedApps } from "./capsule";
 import type { ApprovedApp, LearningCapsule, SchoolBubble } from "./capsule";
 
 export type SchoolTeacher = { id: string; name: string; subject: string; className: string; studentIds: string[] };
@@ -108,7 +109,7 @@ export function addSchoolApp(candidate: SchoolApp): SchoolConfig {
 export function attachSchoolBubble(capsule: LearningCapsule): LearningCapsule {
   const school = getSchool();
   const catalog = new Map(school.appCatalog.map((app) => [app.id, app]));
-  const phases = capsule.phases.map((phase) => ({
+  const phases = withApprovedApps(capsule).phases.map((phase) => ({
     ...phase,
     allowed_apps: phase.allowed_apps.map((selected) => {
       const approved = catalog.get(selected.id);

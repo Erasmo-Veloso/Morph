@@ -23,6 +23,7 @@ import {
   Timer,
   X
 } from "lucide-react";
+import { withApprovedApps } from "@/lib/capsule";
 import type { ApprovedApp, Capability, CompileResult, LearningCapsule, LearningPhase, PhaseId } from "@/lib/capsule";
 import type { SchoolConfig } from "@/lib/school-store";
 import type { LessonSession } from "@/lib/session-store";
@@ -132,7 +133,7 @@ function AndroidPhasePreview({ phase }: { phase: PhaseId }) {
 
 export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningCapsule }) {
   const [intent, setIntent] = useState(defaultIntent);
-  const [capsule, setCapsule] = useState(initialCapsule);
+  const [capsule, setCapsule] = useState(() => withApprovedApps(initialCapsule));
   const [session, setSession] = useState<LessonSession | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [view, setView] = useState<"intent" | "configure" | "present">("intent");
@@ -198,7 +199,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
     setErrorMessage(null);
     try {
       const result = await action();
-      if (result.capsule) setCapsule(result.capsule);
+      if (result.capsule) setCapsule(withApprovedApps(result.capsule));
       if (result.session) setSession(result.session);
       return result;
     } catch (error) {
