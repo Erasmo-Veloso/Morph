@@ -222,6 +222,8 @@ Android LessonRuntime + PhaseEngine
   Samsung Notes in `MEASURE`, and Chrome in `ANALYSE`. A denied launch records
   a minimal Sentinel event and returns the learner to Morph. It is an
   accessibility-based MVP guard, not a replacement for Device Owner/kiosk mode.
+  The Morph runtime also presents launch shortcuts sourced from that same
+  allowlist, so the permitted tools are both visible and actionable.
 - Sentinel persists before any network attempt. A reconnect marks an event
   synced only after the server acknowledges its id.
 - `ConnectivityMonitor` combines local network validation with WebSocket
