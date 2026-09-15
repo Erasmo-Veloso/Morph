@@ -99,6 +99,23 @@ try {
   });
   if (invalidCapsuleResponse.status !== 400) throw new Error("Bridge accepted an invalid Capsule");
 
+  socket.send(JSON.stringify({
+    type: "sentinel:event",
+    event: {
+      id: randomUUID(),
+      studentId: "validate-student",
+      capsuleId: fixture.id,
+      phaseId: "UNDERSTAND",
+      type: "UNKNOWN_EVENT",
+      occurredAt: Date.now(),
+      payload: "test"
+    }
+  }));
+  const invalidSentinel = await nextMessage((message) => message.type === "sentinel:error");
+  if (!invalidSentinel.error?.includes("Unsupported Sentinel event type")) {
+    throw new Error("Bridge accepted an unsupported Sentinel event type");
+  }
+
   const startResponse = await fetch(`${baseUrl}/bridge/command`, {
     method: "POST",
     headers: { "content-type": "application/json" },

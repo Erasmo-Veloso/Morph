@@ -41,6 +41,12 @@ const acknowledgedEventIds = new Set(
 let phaseIndex = Number.isInteger(persistedState.phaseIndex) ? persistedState.phaseIndex : 0;
 let running = persistedState.capsuleId === capsule.id && persistedState.running === true;
 const sentinelTimeline = Array.isArray(persistedState.sentinelTimeline) ? persistedState.sentinelTimeline : [];
+const sentinelEventTypes = new Set([
+  "RESTRICTED_ACCESS_ATTEMPT",
+  "CONNECTIVITY_CHANGED",
+  "SCHOOL_CONTEXT_LOST",
+  "POLICY_PERMISSION_CHANGED"
+]);
 let enrollment = { ...demoEnrollment, ...(persistedState.enrollment ?? {}) };
 let schoolContext = persistedState.schoolContext ?? "SCHOOL_VERIFIED";
 let persistChain = Promise.resolve();
@@ -89,6 +95,18 @@ function enrollmentMessage() {
 
 function schoolContextMessage() {
   return { type: "school:context", state: schoolContext };
+}
+
+function sentinelEventError(event) {
+  if (!event || typeof event !== "object" || Array.isArray(event)) return "Sentinel event must be an object.";
+  if (typeof event.id !== "string" || event.id.trim().length === 0) return "Sentinel event id is required.";
+  if (typeof event.studentId !== "string" || event.studentId.trim().length === 0) return "Sentinel event studentId is required.";
+  if (typeof event.capsuleId !== "string" || event.capsuleId.trim().length === 0) return "Sentinel event capsuleId is required.";
+  if (typeof event.phaseId !== "string" || event.phaseId.trim().length === 0) return "Sentinel event phaseId is required.";
+  if (!sentinelEventTypes.has(event.type)) return `Unsupported Sentinel event type: ${String(event.type)}.`;
+  if (typeof event.occurredAt !== "number" || !Number.isFinite(event.occurredAt)) return "Sentinel event occurredAt is required.";
+  if (typeof event.payload !== "string") return "Sentinel event payload is required.";
+  return null;
 }
 
 function pairDevice(candidate = {}) {
@@ -305,10 +323,16 @@ websocket.on("connection", (socket) => {
       return;
     }
     if (message.type === "sentinel:event") {
-      const eventId = message.event?.id;
+      const event = message.event;
+      const validationError = sentinelEventError(event);
+      if (validationError) {
+        socket.send(JSON.stringify({ type: "sentinel:error", eventId: event?.id ?? null, error: validationError }));
+        return;
+      }
+      const eventId = event.id;
       if (eventId && !acknowledgedEventIds.has(eventId)) {
         acknowledgedEventIds.add(eventId);
-        sentinelTimeline.push({ ...message.event, receivedAt: Date.now() });
+        sentinelTimeline.push({ ...event, receivedAt: Date.now() });
         void persistSessionState();
         console.log(JSON.stringify({ received: "sentinel:event", eventId }));
       }

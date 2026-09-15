@@ -22,7 +22,8 @@ or a hosted environment.
   allowlist; `ShieldActivity` returns the learner to Morph. The event is first
   stored in Room and marked synced only after server acknowledgement. The event
   payload does not collect application content, messages, contacts, images or
-  screenshots.
+  screenshots. The bridge validates the event envelope and canonical event type
+  before acknowledging it.
 - **MEASURE.** The Android runtime uses `SensorManager` with
   `TYPE_ACCELEROMETER`, shows its magnitude in a live chart and releases the
   listener outside the measurement phase.
