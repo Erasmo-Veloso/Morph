@@ -1,6 +1,7 @@
 package com.morph.runtime.data
 
 import android.content.Context
+import com.morph.runtime.domain.SentinelEventType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -10,8 +11,8 @@ class SentinelRepository(context: Context, private val studentId: () -> String) 
     private val dao = SentinelDatabase.get(context).events()
     val pendingCount: Flow<Int> = dao.pendingCount()
 
-    suspend fun record(capsuleId: String, phaseId: String, type: String, payload: String): String = withContext(Dispatchers.IO) {
-        val event = SentinelEventEntity(UUID.randomUUID().toString(), studentId(), capsuleId, phaseId, type, System.currentTimeMillis(), payload)
+    suspend fun record(capsuleId: String, phaseId: String, type: SentinelEventType, payload: String): String = withContext(Dispatchers.IO) {
+        val event = SentinelEventEntity(UUID.randomUUID().toString(), studentId(), capsuleId, phaseId, type.name, System.currentTimeMillis(), payload)
         dao.insert(event)
         event.id
     }

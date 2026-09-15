@@ -8,6 +8,7 @@ import com.morph.runtime.domain.LessonRuntime
 import com.morph.runtime.domain.PhaseEngine
 import com.morph.runtime.domain.PhaseType
 import com.morph.runtime.domain.SchoolContext
+import com.morph.runtime.domain.SentinelEventType
 import com.morph.runtime.data.SentinelRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,10 +47,6 @@ class SessionClient(
             while (isActive) {
                 delay(CONTEXT_EXPIRY_POLL_MS)
                 if (!runtime.expireUnverifiedContext()) continue
-                val state = engine.state.value
-                val capsuleId = state.capsuleId ?: continue
-                sentinel.record(capsuleId, "none", "SCHOOL_CONTEXT_EXPIRED", "reason=unverified_context_ttl")
-                syncPending()
                 sendDeviceStatus()
             }
         }
@@ -58,12 +55,14 @@ class SessionClient(
                 val previous = engine.state.value.bubbleStatus
                 engine.setBubbleStatus(status)
                 val state = engine.state.value
-                if (state.capsuleId != null && previous != status) {
+                val contextWasLost = previous == BubbleStatus.OUTSIDE || previous == BubbleStatus.UNKNOWN
+                val contextIsLost = status == BubbleStatus.OUTSIDE || status == BubbleStatus.UNKNOWN
+                if (state.capsuleId != null && contextIsLost && !contextWasLost) {
                     sentinel.record(
                         state.capsuleId,
                         state.currentPhase?.id ?: "none",
-                        "SCHOOL_BUBBLE_CHANGED",
-                        "state=$status"
+                        SentinelEventType.SCHOOL_CONTEXT_LOST,
+                        "context=bubble_$status"
                     )
                     syncPending()
                 }
@@ -145,7 +144,7 @@ class SessionClient(
                     val state = engine.state.value
                     if (context == SchoolContext.SCHOOL_UNVERIFIED && previous != context && state.capsuleId != null) {
                         scope.launch {
-                            sentinel.record(state.capsuleId, state.currentPhase?.id ?: "none", "SCHOOL_CONTEXT_LOST", "context=unverified")
+                            sentinel.record(state.capsuleId, state.currentPhase?.id ?: "none", SentinelEventType.SCHOOL_CONTEXT_LOST, "context=unverified")
                             syncPending()
                         }
                     }
@@ -162,7 +161,7 @@ class SessionClient(
         val state = engine.state.value
         val capsuleId = state.capsuleId ?: return
         scope.launch {
-            sentinel.record(capsuleId, state.currentPhase?.id ?: "none", "CONNECTIVITY_CHANGED", "state=$next")
+            sentinel.record(capsuleId, state.currentPhase?.id ?: "none", SentinelEventType.CONNECTIVITY_CHANGED, "state=$next")
             syncPending()
         }
         sendDeviceStatus()

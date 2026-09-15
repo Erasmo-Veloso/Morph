@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
 import com.morph.runtime.domain.PolicyState
+import com.morph.runtime.domain.SentinelEventType
 import kotlinx.coroutines.launch
 
 class PolicyAccessibilityService : AccessibilityService() {
@@ -25,7 +26,7 @@ class PolicyAccessibilityService : AccessibilityService() {
         lastPackage = packageName
         lastAttemptAt = now
         MorphApplication.instance.scope.launch {
-            MorphApplication.instance.sentinel.record(policy.capsuleId, policy.phaseId, "RESTRICTED_ACCESS_ATTEMPT", "package=$packageName")
+            MorphApplication.instance.sentinel.record(policy.capsuleId, policy.phaseId, SentinelEventType.RESTRICTED_ACCESS_ATTEMPT, "package=$packageName")
             MorphApplication.instance.session.syncPending()
         }
         mainHandler.postDelayed({

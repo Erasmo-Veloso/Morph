@@ -36,8 +36,7 @@ const runtimeEventLabel: Record<string, string> = {
   RESTRICTED_ACCESS_ATTEMPT: "Tentativa fora da etapa",
   SCHOOL_CONTEXT_LOST: "Contexto por confirmar",
   CONNECTIVITY_CHANGED: "Conectividade actualizada",
-  POLICY_PERMISSION_CHANGED: "Permissão de protecção alterada",
-  SCHOOL_BUBBLE_CHANGED: "School Bubble actualizada"
+  POLICY_PERMISSION_CHANGED: "Permissão de protecção alterada"
 };
 
 const priorityRuntimeEventTypes = new Set([
@@ -204,7 +203,6 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const runtimeDevice = runtimeStatus?.devices.at(-1);
   const runtimeEvents = runtimeStatus?.events.slice().reverse() ?? [];
   const latestRuntimeEvent = runtimeEvents.find((event) => priorityRuntimeEventTypes.has(event.type))
-    ?? runtimeEvents.find((event) => event.type !== "SCHOOL_BUBBLE_CHANGED")
     ?? runtimeEvents[0];
   const enrollment = runtimeStatus?.enrollment;
   const demoTeacher = school?.teachers.find((teacher) => teacher.id === "teacher-ana") ?? school?.teachers[0];
