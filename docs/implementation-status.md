@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated: 2026-09-12
+Updated: 2026-09-15
 
 ## PROVEN
 
@@ -80,9 +80,9 @@ Updated: 2026-09-12
 - A physical handset and physical movement are not proven in this environment.
   The sensor graph proof uses the API 36 emulator's virtual SensorManager input
   (`adb emu sensor`), not a claim of human movement.
-- The default fixture still lists Instagram/TikTok; those packages are absent
-  from this emulator. Chrome enforcement is available only through the
-  explicit emulator demo profile.
+- The canonical fixture carries the configured Campus Horizonte School Bubble.
+  The current APK uses its explicit `DEMO_READY` adapter rather than evaluating
+  GPS; Chrome enforcement is available through the emulator demo profile.
 - Release signing, video capture and capsule cryptographic signatures remain
   outside this MVP slice.
 
