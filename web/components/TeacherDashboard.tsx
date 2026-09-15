@@ -173,6 +173,14 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   }, []);
 
   useEffect(() => {
+    if (runtimeStatus?.session.running || !session || session.status !== "RUNNING") return;
+    setSession(null);
+    setView("intent");
+    setSelectedPhaseId("UNDERSTAND");
+    setIsPreviewOpen(false);
+  }, [runtimeStatus, session]);
+
+  useEffect(() => {
     void fetch("/api/school", { cache: "no-store" })
       .then((response) => response.json())
       .then((payload: { school?: SchoolConfig }) => { setSchool(payload.school ?? null); setAppCatalog(payload.school?.appCatalog ?? []); })
@@ -180,9 +188,13 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   }, []);
 
   const activePhase = useMemo(() => {
+    if (runtimeStatus) {
+      if (!runtimeStatus.session.running) return null;
+      return capsule.phases.find((phase) => phase.id === runtimeStatus.session.phase) ?? null;
+    }
     if (!session || session.currentPhase === "COMPLETED") return null;
     return capsule.phases.find((phase) => phase.id === session.currentPhase) ?? null;
-  }, [capsule.phases, session]);
+  }, [capsule.phases, runtimeStatus, session]);
 
   const selectedPhase = capsule.phases.find((phase) => phase.id === selectedPhaseId) ?? capsule.phases[0]!;
   const presentationPhase = activePhase ?? selectedPhase;
@@ -196,6 +208,15 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
     ?? runtimeEvents[0];
   const enrollment = runtimeStatus?.enrollment;
   const demoTeacher = school?.teachers.find((teacher) => teacher.id === "teacher-ana") ?? school?.teachers[0];
+  const isSessionActive = runtimeStatus ? runtimeStatus.session.running : Boolean(session);
+  const runtimeStage = runtimeDevice?.phase
+    ?? (runtimeDevice?.authority === "BREAK"
+      ? "BREAK"
+      : runtimeStatus?.session.schoolContext === "OUTSIDE_SCHOOL"
+        ? "PASSIVE"
+        : runtimeStatus?.session.running
+          ? runtimeStatus.session.phase
+          : "SCHOOL_IDLE");
 
   useEffect(() => {
     const root = presentationRef.current;
@@ -221,6 +242,8 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
       const result = await action();
       if (result.capsule) setCapsule(withApprovedApps(result.capsule));
       if (result.session) setSession(result.session);
+      const statusResponse = await fetch("/api/runtime/status", { cache: "no-store" }).catch(() => null);
+      if (statusResponse?.ok) setRuntimeStatus(await statusResponse.json() as RuntimeStatus);
       return result;
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Não foi possível concluir esta acção.");
@@ -405,13 +428,13 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
             <div className="phase-demo-layout">
               <div className={`phase-focus phase-${presentationPhase.id.toLowerCase()}`} data-enter>
                 <div className="phase-symbol"><PhaseIcon size={38} /></div>
-                <p className="phase-kicker">{session ? "Fase ativa" : "Cápsula compilada"}</p>
+                <p className="phase-kicker">{isSessionActive ? "Fase ativa" : "Cápsula compilada"}</p>
                 <h1 id="phase-title">{phaseMeta[presentationPhase.id].label}</h1>
                 <p className="phase-description">{phaseMeta[presentationPhase.id].description}</p>
                 <div className="phase-detail"><FileCode2 size={17} /> {phaseMeta[presentationPhase.id].detail}</div>
               </div>
               <aside className="phase-device-card" aria-label="Tela real do Android" data-enter>
-                <div className="phase-device-meta"><span>ANDROID RUNTIME</span><strong>{session ? (isRuntimeConnected ? "AO VIVO" : "SIMULAÇÃO") : "PREVIEW"}</strong></div>
+                <div className="phase-device-meta"><span>ANDROID RUNTIME</span><strong>{isSessionActive ? (isRuntimeConnected ? "AO VIVO" : "SIMULAÇÃO") : "PREVIEW"}</strong></div>
                 <div className="phase-device-image"><AndroidPhasePreview phase={presentationPhase.id} /></div>
                 <p>O telefone recebe apenas a capacidade desta etapa.</p>
               </aside>
@@ -429,7 +452,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
             </nav>
 
             <div className="stage-action" data-enter>
-              {!session ? (
+              {!isSessionActive ? (
                 <button className="main-action" type="button" disabled={isBusy} onClick={startSimulation}>
                   <Play size={17} fill="currentColor" /> Iniciar simulação
                 </button>
@@ -445,7 +468,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
               <div><span>Turma</span><strong>{demoTeacher ? `${demoTeacher.className} · ${demoTeacher.studentIds.length} alunos` : "A CARREGAR"}</strong></div>
               <div><span>Aluno · turma</span><strong>{enrollment ? `${enrollment.studentName} · ${enrollment.classId}` : "A CONFIRMAR"}</strong></div>
               <div><span>Dispositivo</span><strong>{enrollment?.state === "PAIRED" ? (enrollment.deviceName ?? "ASSOCIADO") : "AGUARDA CÓDIGO"}</strong></div>
-              <div><span>Android</span><strong>{runtimeDevice?.phase ?? "A AGUARDAR DEVICE"}</strong></div>
+              <div><span>Android</span><strong>{runtimeStage}</strong></div>
               <div><span>Conectividade</span><strong>{runtimeDevice?.connectivity ?? "SEM DISPOSITIVO"}</strong></div>
               <div><span>Contexto escolar</span><strong>{runtimeDevice?.schoolContext ?? "A CONFIRMAR DISPOSITIVO"}</strong></div>
               <div><span>Sentinel</span><strong>{latestRuntimeEvent ? (runtimeEventLabel[latestRuntimeEvent.type] ?? latestRuntimeEvent.type) : "SEM EVENTOS"}</strong></div>
