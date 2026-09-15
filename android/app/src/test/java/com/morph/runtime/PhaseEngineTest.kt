@@ -133,6 +133,27 @@ class PhaseEngineTest {
     }
 
     @Test
+    fun `outside context stays passive when verified context returns`() {
+        val engine = PhaseEngine { 1234L }
+        engine.setEnrollment(DeviceEnrollment.ENROLLED)
+        engine.receive(capsule(SchoolBubble("bubble", "Colégio Horizonte", GeoPoint(-8.83, 13.23), 180, 100, 300)))
+        engine.markReady()
+        engine.setBubbleStatus(BubbleStatus.DEMO_READY)
+        engine.start()
+
+        engine.setSchoolContext(SchoolContext.OUTSIDE_SCHOOL)
+        assertEquals(RuntimeStage.IDLE, engine.state.value.stage)
+        assertEquals(AuthorityState.PASSIVE, engine.state.value.authority)
+        assertEquals(null, PolicyState.current())
+
+        engine.setSchoolContext(SchoolContext.SCHOOL_VERIFIED)
+        assertEquals(RuntimeStage.IDLE, engine.state.value.stage)
+        assertEquals(AuthorityState.SCHOOL_IDLE, engine.state.value.authority)
+        assertEquals(false, engine.state.value.running)
+        assertEquals(null, PolicyState.current())
+    }
+
+    @Test
     fun `each phase exposes only its pedagogical applications`() {
         val engine = PhaseEngine { 1234L }
         engine.setEnrollment(DeviceEnrollment.ENROLLED)

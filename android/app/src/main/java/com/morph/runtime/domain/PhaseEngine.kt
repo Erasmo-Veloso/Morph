@@ -186,7 +186,10 @@ class PhaseEngine(private val monotonicClock: () -> Long = { SystemClock.elapsed
     }
 
     private fun leaveSchoolContext() {
-        suspendedPhaseType = _state.value.currentPhase?.type
+        // Leaving the school boundary ends the current authority. A later
+        // verified context must not silently restart a teacher session that the
+        // bridge has already ended.
+        suspendedPhaseType = null
         PolicyState.clear()
         capabilityManager.clear()
         _state.value = _state.value.copy(
