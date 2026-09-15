@@ -51,7 +51,7 @@
     "events": "LOCAL_QUEUE"
   },
   "valid_from": "2026-09-12T00:00:00.000Z",
-  "valid_until": "2026-09-14T23:59:59.000Z",
+  "valid_until": "2026-09-19T23:59:59.000Z",
   "signature": "demo-signature-hkt-04",
   "school_bubble": {
     "id": "bubble-horizonte-main",

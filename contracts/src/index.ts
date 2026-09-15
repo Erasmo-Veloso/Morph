@@ -12,6 +12,14 @@ export type Capability = (typeof CAPABILITIES)[number];
 export const RESTRICTIONS = ["SOCIAL_APPS", "MESSAGING", "UNRELATED_BROWSER"] as const;
 export type Restriction = (typeof RESTRICTIONS)[number];
 
+export const SENTINEL_EVENT_TYPES = [
+  "RESTRICTED_ACCESS_ATTEMPT",
+  "CONNECTIVITY_CHANGED",
+  "SCHOOL_CONTEXT_LOST",
+  "POLICY_PERMISSION_CHANGED"
+] as const;
+export type SentinelEventType = (typeof SENTINEL_EVENT_TYPES)[number];
+
 export interface LearningAsset {
   id: string;
   title: string;
@@ -64,7 +72,7 @@ export interface LearningCapsule {
   phases: LearningPhase[];
   integrity_policy: {
     enabled: boolean;
-    sentinel_events?: string[];
+    sentinel_events?: SentinelEventType[];
     privacy?: "POLICY_INTEGRITY_ONLY";
   };
   offline_policy: {
@@ -111,6 +119,10 @@ export function parseLessonCapsule(input: unknown): LearningCapsule {
 
   if (!isRecord(input.integrity_policy) || typeof input.integrity_policy.enabled !== "boolean") {
     throw new Error("integrity_policy.enabled is required");
+  }
+  const sentinelEvents = input.integrity_policy.sentinel_events;
+  if (sentinelEvents !== undefined && (!Array.isArray(sentinelEvents) || sentinelEvents.some((value) => !SENTINEL_EVENT_TYPES.includes(value as SentinelEventType)))) {
+    throw new Error("integrity_policy.sentinel_events contains an invalid event");
   }
   if (!isRecord(input.offline_policy) || typeof input.offline_policy.enabled !== "boolean") {
     throw new Error("offline_policy.enabled is required");

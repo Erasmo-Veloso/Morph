@@ -11,6 +11,8 @@ assert.equal(new Set(capsule.phases.map(({ id }) => id)).size, capsule.phases.le
 assert.ok(capsule.phases.find(({ id }) => id === "MEASURE").capabilities.includes("ACCELEROMETER"));
 assert.equal(capsule.integrity_policy.enabled, true);
 assert.equal(capsule.offline_policy.enabled, true);
+assert.deepEqual(capsule.integrity_policy.sentinel_events, ["RESTRICTED_ACCESS_ATTEMPT", "CONNECTIVITY_CHANGED", "SCHOOL_CONTEXT_LOST"]);
+assert.equal(capsule.school_bubble.name, "Campus Horizonte");
 for (const phase of capsule.phases) {
   assert.ok(phase.duration > 0);
   assert.ok(Array.isArray(phase.capabilities));
