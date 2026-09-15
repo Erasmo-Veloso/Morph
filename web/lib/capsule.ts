@@ -21,11 +21,22 @@ export type LearningAsset = {
   local: boolean;
 };
 
+/** A school-approved Android application carried inside the offline Capsule. */
+export type ApprovedApp = {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  package_names: string[];
+  preferred_android?: { package_name: string; activity_name?: string };
+};
+
 export type LearningPhase = {
   id: PhaseId;
   duration: number;
   capabilities: Capability[];
   restrictions: Restriction[];
+  allowed_apps: ApprovedApp[];
   learning_assets: LearningAsset[];
   transitions: {
     next: PhaseId | null;
@@ -81,6 +92,12 @@ const phaseDurations: Record<PhaseId, number> = {
   REFLECT: 300
 };
 
+const demoApps = {
+  calculator: { id: "calculator", name: "Calculadora", category: "CÁLCULO", description: "Cálculos rápidos durante a experiência.", package_names: ["com.sec.android.app.popupcalculator", "com.google.android.calculator", "com.android.calculator2"], preferred_android: { package_name: "com.sec.android.app.popupcalculator", activity_name: ".Calculator" } },
+  samsungNotes: { id: "samsung-notes", name: "Samsung Notes", category: "NOTAS", description: "Registo local de observações e resultados.", package_names: ["com.samsung.android.app.notes"], preferred_android: { package_name: "com.samsung.android.app.notes", activity_name: ".memolist.MemoListActivity" } },
+  chrome: { id: "chrome", name: "Google Chrome", category: "NAVEGAÇÃO", description: "Consulta de uma fonte indicada pelo professor.", package_names: ["com.android.chrome"], preferred_android: { package_name: "com.android.chrome" } }
+} satisfies Record<string, ApprovedApp>;
+
 export function compilePedagogicalIntent(intent: string): CompileResult {
   const normalizedIntent = intent.trim();
   const objective =
@@ -102,6 +119,7 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           duration: phaseDurations.UNDERSTAND,
           capabilities: ["LEARNING_CONTENT", "GUIDED_EXPLANATION"],
           restrictions: ["SOCIAL_APPS", "MESSAGING"],
+          allowed_apps: [],
           learning_assets: [
             {
               id: "asset-understand-motion",
@@ -117,6 +135,7 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           duration: phaseDurations.MEASURE,
           capabilities: ["ACCELEROMETER", "GYROSCOPE", "CAMERA", "CHRONOMETER"],
           restrictions: ["SOCIAL_APPS", "MESSAGING", "UNRELATED_BROWSER"],
+          allowed_apps: [demoApps.calculator, demoApps.samsungNotes],
           learning_assets: [
             {
               id: "asset-measure-protocol",
@@ -132,6 +151,7 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           duration: phaseDurations.ANALYSE,
           capabilities: ["COLLECTED_DATA", "GRAPH", "CALCULATOR"],
           restrictions: ["SOCIAL_APPS", "MESSAGING"],
+          allowed_apps: [demoApps.chrome],
           learning_assets: [
             {
               id: "asset-analysis-template",
@@ -147,6 +167,7 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           duration: phaseDurations.REFLECT,
           capabilities: ["EXIT_TICKET"],
           restrictions: ["SOCIAL_APPS", "MESSAGING"],
+          allowed_apps: [],
           learning_assets: [
             {
               id: "asset-exit-ticket",
