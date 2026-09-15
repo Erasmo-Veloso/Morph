@@ -1,6 +1,7 @@
 package com.morph.runtime
 
 import android.graphics.Color as AndroidColor
+import android.content.Context
 import android.os.Bundle
 import android.view.View
 import androidx.activity.ComponentActivity
@@ -31,13 +32,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Eco
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Policy
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,7 +72,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.morph.runtime.domain.Capability
 import com.morph.runtime.domain.Connectivity
+import com.morph.runtime.domain.BubbleStatus
 import com.morph.runtime.domain.PhaseType
+import com.morph.runtime.domain.Phase
+import com.morph.runtime.domain.AllowedApp
+import com.morph.runtime.domain.PedagogicalAppPolicy
 import com.morph.runtime.domain.RuntimeStage
 import kotlin.math.cos
 import kotlin.math.sin
@@ -113,7 +123,11 @@ private fun MorphScreen(app: MorphApplication) {
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 BrandHeader()
-                RuntimeStrip(runtime.connectivity, runtime.running)
+                RuntimeStrip(runtime.connectivity, runtime.running, runtime.bubbleStatus)
+                if (runtime.running && phase != null) AllowedAppShortcuts(phase, context)
+                if (runtime.schoolBubbleName != null && runtime.bubbleStatus == BubbleStatus.DEMO_READY) {
+                    Text("${runtime.schoolBubbleName} · pronta para demonstração", color = PrimaryBlue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
                 TextButton(
                     onClick = { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                     modifier = Modifier.align(Alignment.Start)
@@ -325,12 +339,23 @@ private fun BrandHeader() {
 }
 
 @Composable
-private fun RuntimeStrip(connectivity: Connectivity, running: Boolean) {
+private fun RuntimeStrip(connectivity: Connectivity, running: Boolean, bubbleStatus: BubbleStatus) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         StatusMark(if (running) "EM AULA" else "A AGUARDAR", running)
         Text("·", color = BorderBlue, fontWeight = FontWeight.Bold)
         StatusMark(if (connectivity == Connectivity.ISOLATED) "OFFLINE" else "ONLINE", connectivity != Connectivity.ISOLATED)
+        Text("·", color = BorderBlue, fontWeight = FontWeight.Bold)
+        StatusMark(bubbleStatus.label(), bubbleStatus == BubbleStatus.INSIDE || bubbleStatus == BubbleStatus.NOT_REQUIRED)
     }
+}
+
+private fun BubbleStatus.label() = when (this) {
+    BubbleStatus.NOT_REQUIRED -> "SEM BUBBLE"
+    BubbleStatus.DEMO_READY -> "BUBBLE · DEMO"
+    BubbleStatus.CHECKING -> "A CONFIRMAR LOCAL"
+    BubbleStatus.INSIDE -> "DENTRO DA ESCOLA"
+    BubbleStatus.OUTSIDE -> "FORA DA ESCOLA"
+    BubbleStatus.UNKNOWN -> "LOCALIZAÇÃO INDISPONÍVEL"
 }
 
 @Composable
@@ -339,6 +364,50 @@ private fun StatusMark(label: String, active: Boolean) {
         Box(modifier = Modifier.size(7.dp).background(if (active) PrimaryBlue else Muted, CircleShape))
         Text(label, color = Navy, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
     }
+}
+
+@Composable
+private fun AllowedAppShortcuts(phase: Phase, context: Context) {
+    val apps = PedagogicalAppPolicy.allowedApps(phase)
+    if (apps.isEmpty()) {
+        FeatureCard(Icons.Outlined.Policy, "modo foco", "Esta etapa acontece inteiramente no Morph.") {
+            Text("Não há aplicações externas disponíveis agora.", color = Navy, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        }
+        return
+    }
+    FeatureCard(Icons.Outlined.Policy, "ferramentas desta etapa", "Atalhos para as aplicações que esta fase autoriza.") {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            apps.forEach { app ->
+                Button(
+                    onClick = { openAllowedApp(context, app) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue, contentColor = Color.White),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(app.icon(), contentDescription = null, modifier = Modifier.size(17.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(app.label, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+private fun openAllowedApp(context: Context, app: AllowedApp) {
+    val explicitIntent = app.preferredPackage?.let { packageName ->
+        app.preferredActivity?.let { activityName ->
+            android.content.Intent().setComponent(android.content.ComponentName(packageName, "$packageName$activityName"))
+        }
+    }
+    val launchIntent = explicitIntent?.takeIf { it.resolveActivity(context.packageManager) != null }
+        ?: app.packageNames.firstNotNullOfOrNull(context.packageManager::getLaunchIntentForPackage)
+    launchIntent?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)?.let(context::startActivity)
+}
+
+private fun AllowedApp.icon(): ImageVector = when (label) {
+    "Calculadora" -> Icons.Outlined.Calculate
+    "Samsung Notes" -> Icons.Outlined.EditNote
+    else -> Icons.Outlined.Language
 }
 
 @Composable

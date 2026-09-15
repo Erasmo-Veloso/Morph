@@ -21,14 +21,41 @@ export type LearningAsset = {
   local: boolean;
 };
 
+/** A school-approved Android application carried inside the offline Capsule. */
+export type ApprovedApp = {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  package_names: string[];
+  preferred_android?: { package_name: string; activity_name?: string };
+};
+
 export type LearningPhase = {
   id: PhaseId;
   duration: number;
   capabilities: Capability[];
   restrictions: Restriction[];
+  allowed_apps: ApprovedApp[];
   learning_assets: LearningAsset[];
   transitions: {
     next: PhaseId | null;
+  };
+};
+
+export type SchoolBubble = {
+  id: string;
+  school_id: string;
+  name: string;
+  boundary: {
+    type: "CIRCLE";
+    center: { latitude: number; longitude: number };
+    radius_meters: number;
+  };
+  policy: {
+    gps_required: boolean;
+    max_accuracy_meters: number;
+    unknown_location_grace_seconds: number;
   };
 };
 
@@ -50,6 +77,7 @@ export type LearningCapsule = {
   valid_from: string;
   valid_until: string;
   signature: string;
+  school_bubble?: SchoolBubble;
 };
 
 export type CompileResult = {
@@ -63,6 +91,12 @@ const phaseDurations: Record<PhaseId, number> = {
   ANALYSE: 600,
   REFLECT: 300
 };
+
+const demoApps = {
+  calculator: { id: "calculator", name: "Calculadora", category: "CÁLCULO", description: "Cálculos rápidos durante a experiência.", package_names: ["com.sec.android.app.popupcalculator", "com.google.android.calculator", "com.android.calculator2"], preferred_android: { package_name: "com.sec.android.app.popupcalculator", activity_name: ".Calculator" } },
+  samsungNotes: { id: "samsung-notes", name: "Samsung Notes", category: "NOTAS", description: "Registo local de observações e resultados.", package_names: ["com.samsung.android.app.notes"], preferred_android: { package_name: "com.samsung.android.app.notes", activity_name: ".memolist.MemoListActivity" } },
+  chrome: { id: "chrome", name: "Google Chrome", category: "NAVEGAÇÃO", description: "Consulta de uma fonte indicada pelo professor.", package_names: ["com.android.chrome"], preferred_android: { package_name: "com.android.chrome" } }
+} satisfies Record<string, ApprovedApp>;
 
 export function compilePedagogicalIntent(intent: string): CompileResult {
   const normalizedIntent = intent.trim();
@@ -85,6 +119,7 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           duration: phaseDurations.UNDERSTAND,
           capabilities: ["LEARNING_CONTENT", "GUIDED_EXPLANATION"],
           restrictions: ["SOCIAL_APPS", "MESSAGING"],
+          allowed_apps: [],
           learning_assets: [
             {
               id: "asset-understand-motion",
@@ -100,6 +135,7 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           duration: phaseDurations.MEASURE,
           capabilities: ["ACCELEROMETER", "GYROSCOPE", "CAMERA", "CHRONOMETER"],
           restrictions: ["SOCIAL_APPS", "MESSAGING", "UNRELATED_BROWSER"],
+          allowed_apps: [demoApps.calculator, demoApps.samsungNotes],
           learning_assets: [
             {
               id: "asset-measure-protocol",
@@ -115,6 +151,7 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           duration: phaseDurations.ANALYSE,
           capabilities: ["COLLECTED_DATA", "GRAPH", "CALCULATOR"],
           restrictions: ["SOCIAL_APPS", "MESSAGING"],
+          allowed_apps: [demoApps.chrome],
           learning_assets: [
             {
               id: "asset-analysis-template",
@@ -130,6 +167,7 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           duration: phaseDurations.REFLECT,
           capabilities: ["EXIT_TICKET"],
           restrictions: ["SOCIAL_APPS", "MESSAGING"],
+          allowed_apps: [],
           learning_assets: [
             {
               id: "asset-exit-ticket",
@@ -165,6 +203,16 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
       "Capsule is offline-ready and does not depend on the original teacher text.",
       "Sentinel events are limited to policy integrity, not student content."
     ]
+  };
+}
+
+/** A Capsule compiled before the school catalogue carries no app selection.
+ * Read that absence as "no application authorised", which is the restrictive
+ * reading, instead of letting a missing field break the studio or the API. */
+export function withApprovedApps(capsule: LearningCapsule): LearningCapsule {
+  return {
+    ...capsule,
+    phases: capsule.phases.map((phase) => ({ ...phase, allowed_apps: phase.allowed_apps ?? [] }))
   };
 }
 

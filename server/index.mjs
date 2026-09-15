@@ -101,6 +101,14 @@ function readJson(request) {
 }
 
 const server = createServer(async (request, response) => {
+  response.setHeader("Access-Control-Allow-Origin", "*");
+  response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (request.method === "OPTIONS") {
+    response.writeHead(204);
+    response.end();
+    return;
+  }
   if (request.url?.split("?", 1)[0] === "/health") {
     response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
     response.end(JSON.stringify({
@@ -164,7 +172,7 @@ const server = createServer(async (request, response) => {
   }
 });
 
-const websocket = new WebSocketServer({ server, path: "/realtime" });
+const websocket = new WebSocketServer({ server, path: "/realtime", verifyClient: () => true });
 websocket.on("connection", (socket) => {
   clients.add(socket);
   socket.send(JSON.stringify({ type: "capsule:assigned", capsule }));

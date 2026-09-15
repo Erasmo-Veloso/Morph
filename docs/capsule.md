@@ -19,11 +19,13 @@ LearningCapsule
 │   ├── id
 │   ├── duration
 │   ├── capabilities[]
+│   ├── allowed_apps[] (school-approved apps for this phase)
 │   ├── restrictions[]
 │   ├── learning_assets[]
 │   └── transitions[]
 ├── integrity_policy
 ├── offline_policy
+├── school_bubble (optional local eligibility rule)
 ├── valid_from
 ├── valid_until
 └── signature
@@ -129,6 +131,13 @@ The runtime must know the current phase and the valid next transition.
 
 Capabilities available in one phase do not automatically remain available in another.
 
+### 3.1. Approved apps are explicit and offline-ready
+
+`allowed_apps` contains the concrete applications selected by the teacher from
+the school's approved catalogue. Each entry carries its Android package names
+(and an optional preferred launch activity), so the local runtime can expose
+shortcuts and enforce the same allowlist without contacting a server.
+
 ### 4. Capsule is temporary
 
 A Capsule has a validity period and must expire.
@@ -140,6 +149,22 @@ The runtime must be able to execute the lesson without continuous Internet acces
 ### 6. Integrity is explicit
 
 The Capsule contains an integrity policy used by the runtime/Sentinel.
+
+### 7. School Bubble is local eligibility, not tracking
+
+When present, `school_bubble` is a circular campus boundary configured by the
+school and carried with the Capsule. The Android runtime compares its current
+GPS reading locally with the centre, radius and accuracy threshold. It keeps
+only `INSIDE`, `OUTSIDE` or `UNKNOWN` as runtime state; raw coordinates and a
+location history are neither uploaded nor stored.
+
+An `UNKNOWN` reading may retain the last confirmed `INSIDE` state for the
+configured grace period. Outside the Bubble, the runtime suspends the active
+lesson policy and clears its pedagogical capabilities.
+
+> The current hackathon APK uses `DEMO_READY`: it carries the same Bubble
+> contract but does not request or evaluate GPS during a pitch. The production
+> local evaluator is deliberately deferred so the demo never waits for a fix.
 
 ---
 

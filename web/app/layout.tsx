@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "morph | Teacher Dashboard",
-  description: "Pedagogical compiler and teacher dashboard for the Morph MVP."
+  title: "morph | Aulas que transformam",
+  description: "A Morph transforma a intenção pedagógica numa experiência executável no smartphone."
 };
 
 export default function RootLayout({

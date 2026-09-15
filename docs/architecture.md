@@ -217,12 +217,23 @@ Android LessonRuntime + PhaseEngine
   is in `MEASURE`; lifecycle disposal unregisters the listener.
 - `PolicyAccessibilityService` observes only the foreground package name. It
   does not read window content, capture the screen or access personal data.
+- During an active lesson, `PolicyAccessibilityService` applies a small
+  phase-level allowlist: Morph only in `UNDERSTAND`/`REFLECT`, Calculator and
+  Samsung Notes in `MEASURE`, and Chrome in `ANALYSE`. A denied launch records
+  a minimal Sentinel event and returns the learner to Morph. It is an
+  accessibility-based MVP guard, not a replacement for Device Owner/kiosk mode.
+  The Morph runtime also presents launch shortcuts sourced from that same
+  allowlist, so the permitted tools are both visible and actionable.
 - Sentinel persists before any network attempt. A reconnect marks an event
   synced only after the server acknowledges its id.
 - `ConnectivityMonitor` combines local network validation with WebSocket
   reachability: `ONLINE` means validated Internet plus server, `LOCAL` means
   server reachable without validated Internet, and `ISOLATED` means server
   unreachable.
+- `SchoolBubbleMonitor` currently provides `DEMO_READY`: the pitch APK accepts
+  a Bubble immediately without requesting or reading GPS. The Capsule already
+  carries the complete local-GPS contract; a foreground evaluator is the next
+  post-pitch replacement for this adapter.
 
 The demo server uses one WebSocket endpoint. `teacher:next` is broadcast as
 `phase:changed`, which makes the Android state transition observable in real

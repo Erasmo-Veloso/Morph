@@ -15,4 +15,5 @@ class LessonRuntime(
     fun transitionTo(phase: PhaseType) { phaseEngine.transitionTo(phase) }
     fun end() { phaseEngine.end() }
     fun setConnectivity(value: Connectivity) { phaseEngine.setConnectivity(value) }
+    fun currentSchoolBubble(): SchoolBubble? = phaseEngine.currentSchoolBubble()
 }

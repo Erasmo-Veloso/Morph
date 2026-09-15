@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { LearningCapsule } from "@/lib/capsule";
 import { saveCapsule } from "@/lib/session-store";
 import { publishCapsule } from "@/lib/runtime-bridge";
+import { attachSchoolBubble } from "@/lib/school-store";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as { capsule?: LearningCapsule };
@@ -11,8 +12,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    await publishCapsule(body.capsule);
-    return NextResponse.json({ capsule: saveCapsule(body.capsule) });
+    const capsule = attachSchoolBubble(body.capsule);
+    await publishCapsule(capsule);
+    return NextResponse.json({ capsule: saveCapsule(capsule) });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Runtime bridge unavailable." }, { status: 503 });
   }
