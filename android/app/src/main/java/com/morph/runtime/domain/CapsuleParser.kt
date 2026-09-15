@@ -54,6 +54,7 @@ object CapsuleParser {
         val type = runCatching { PhaseType.valueOf(json.requiredString("id")) }
             .getOrElse { error("Tipo de fase inválido") }
         val restrictions = json.getJSONArray("restrictions").toStringSet()
+        val allowedApps = json.getJSONArray("allowed_apps").toAllowedApps()
         return Phase(
             id = type.name.lowercase(),
             type = type,
@@ -61,8 +62,30 @@ object CapsuleParser {
             durationMinutes = (json.positiveInt("duration") + 59) / 60,
             capabilities = json.getJSONArray("capabilities").toCapabilitySet(),
             restrictedPackages = restrictions.flatMapTo(mutableSetOf()) { restrictionPackages[it].orEmpty() },
-            restrictedCategories = restrictions
+            restrictedCategories = restrictions,
+            allowedApps = allowedApps,
+            allowedAppsConfigured = true
         )
+    }
+
+    private fun JSONArray.toAllowedApps(): List<AllowedApp> {
+        val apps = (0 until length()).map { index ->
+            val app = getJSONObject(index)
+            val packageNames = app.getJSONArray("package_names").toStringSet()
+            require(packageNames.isNotEmpty()) { "A aplicação autorizada precisa de packages" }
+            val preferred = app.optJSONObject("preferred_android")
+            val preferredPackage = preferred?.requiredString("package_name")
+            require(preferredPackage == null || preferredPackage in packageNames) { "Package preferido inválido" }
+            AllowedApp(
+                id = app.requiredString("id"),
+                label = app.requiredString("name"),
+                packageNames = packageNames,
+                preferredPackage = preferredPackage,
+                preferredActivity = preferred?.optString("activity_name")?.trim()?.takeIf { it.isNotEmpty() }
+            )
+        }
+        require(apps.map { it.id }.distinct().size == apps.size) { "Aplicações autorizadas duplicadas" }
+        return apps
     }
 
     private fun JSONArray.toStringSet(): Set<String> = (0 until length()).map { getString(it).also { value -> require(value.isNotBlank()) } }.toSet()

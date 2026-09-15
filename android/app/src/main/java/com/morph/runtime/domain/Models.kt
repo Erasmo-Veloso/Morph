@@ -21,6 +21,14 @@ data class SchoolBubble(
     val unknownLocationGraceSeconds: Int
 )
 
+data class AllowedApp(
+    val id: String,
+    val label: String,
+    val packageNames: Set<String>,
+    val preferredPackage: String? = null,
+    val preferredActivity: String? = null
+)
+
 data class Phase(
     val id: String,
     val type: PhaseType,
@@ -28,7 +36,10 @@ data class Phase(
     val durationMinutes: Int,
     val capabilities: Set<Capability>,
     val restrictedPackages: Set<String>,
-    val restrictedCategories: Set<String>
+    val restrictedCategories: Set<String>,
+    val allowedApps: List<AllowedApp> = emptyList(),
+    /** False only for legacy in-memory fixtures; parsed Capsules always decide explicitly. */
+    val allowedAppsConfigured: Boolean = false
 )
 
 data class LessonCapsule(

@@ -6,7 +6,6 @@ import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
 import com.morph.runtime.domain.PolicyState
-import com.morph.runtime.domain.PedagogicalAppPolicy
 import kotlinx.coroutines.launch
 
 class PolicyAccessibilityService : AccessibilityService() {
@@ -34,7 +33,7 @@ class PolicyAccessibilityService : AccessibilityService() {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 putExtra(ShieldActivity.PACKAGE_NAME, packageName)
                 putExtra(ShieldActivity.PHASE_TYPE, policy.phaseType.name)
-                putExtra(ShieldActivity.ALLOWED_TOOLS, PedagogicalAppPolicy.allowedToolNames(policy.phaseType))
+                putExtra(ShieldActivity.ALLOWED_TOOLS, policy.allowedTools)
             })
         }, 700L)
     }

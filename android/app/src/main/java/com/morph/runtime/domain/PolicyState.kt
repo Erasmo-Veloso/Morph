@@ -6,14 +6,15 @@ data class ActivePolicy(
     val capsuleId: String,
     val phaseId: String,
     val phaseType: PhaseType,
-    val allowedPackages: Set<String>
+    val allowedPackages: Set<String>,
+    val allowedTools: String
 )
 
 object PolicyState {
     private val active = AtomicReference<ActivePolicy?>(null)
 
     fun apply(capsule: LessonCapsule, phase: Phase) {
-        active.set(ActivePolicy(capsule.id, phase.id, phase.type, PedagogicalAppPolicy.allowedPackages(phase.type)))
+        active.set(ActivePolicy(capsule.id, phase.id, phase.type, PedagogicalAppPolicy.allowedPackages(phase), PedagogicalAppPolicy.allowedToolNames(phase)))
     }
 
     fun current(): ActivePolicy? = active.get()

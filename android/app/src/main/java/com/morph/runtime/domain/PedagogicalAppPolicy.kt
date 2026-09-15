@@ -6,13 +6,6 @@ package com.morph.runtime.domain
  * Package names are device-specific infrastructure, while the decision remains
  * pedagogical: each phase exposes only the tools that serve its activity.
  */
-data class AllowedApp(
-    val label: String,
-    val packageNames: Set<String>,
-    val preferredPackage: String? = null,
-    val preferredActivity: String? = null
-)
-
 object PedagogicalAppPolicy {
     private const val SAMSUNG_CALCULATOR = "com.sec.android.app.popupcalculator"
     private const val GOOGLE_CALCULATOR = "com.google.android.calculator"
@@ -20,25 +13,25 @@ object PedagogicalAppPolicy {
     private const val SAMSUNG_NOTES = "com.samsung.android.app.notes"
     private const val CHROME = "com.android.chrome"
 
-    fun allowedApps(phase: PhaseType): List<AllowedApp> = when (phase) {
+    /** Capsules compiled before the school catalogue remain demonstrable. */
+    private fun fallbackApps(phase: PhaseType): List<AllowedApp> = when (phase) {
         PhaseType.UNDERSTAND, PhaseType.REFLECT -> emptyList()
         PhaseType.MEASURE -> listOf(
             AllowedApp(
+                "calculator",
                 "Calculadora",
                 setOf(SAMSUNG_CALCULATOR, GOOGLE_CALCULATOR, AOSP_CALCULATOR),
                 SAMSUNG_CALCULATOR,
                 ".Calculator"
             ),
-            AllowedApp("Samsung Notes", setOf(SAMSUNG_NOTES), SAMSUNG_NOTES, ".memolist.MemoListActivity")
+            AllowedApp("samsung-notes", "Samsung Notes", setOf(SAMSUNG_NOTES), SAMSUNG_NOTES, ".memolist.MemoListActivity")
         )
-        PhaseType.ANALYSE -> listOf(AllowedApp("Chrome", setOf(CHROME)))
+        PhaseType.ANALYSE -> listOf(AllowedApp("chrome", "Google Chrome", setOf(CHROME), CHROME))
     }
 
-    fun allowedPackages(phase: PhaseType): Set<String> = allowedApps(phase).flatMapTo(mutableSetOf()) { it.packageNames }
+    fun allowedApps(phase: Phase): List<AllowedApp> = if (phase.allowedAppsConfigured) phase.allowedApps else fallbackApps(phase.type)
 
-    fun allowedToolNames(phase: PhaseType): String = when (phase) {
-        PhaseType.UNDERSTAND, PhaseType.REFLECT -> "apenas Morph"
-        PhaseType.MEASURE -> "Calculadora e Samsung Notes"
-        PhaseType.ANALYSE -> "Google Chrome"
-    }
+    fun allowedPackages(phase: Phase): Set<String> = allowedApps(phase).flatMapTo(mutableSetOf()) { it.packageNames }
+
+    fun allowedToolNames(phase: Phase): String = allowedApps(phase).joinToString { it.label }.ifBlank { "apenas Morph" }
 }

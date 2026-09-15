@@ -35,7 +35,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.morph.runtime.domain.PhaseType
-import com.morph.runtime.domain.PedagogicalAppPolicy
 
 class ShieldActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +43,7 @@ class ShieldActivity : ComponentActivity() {
         window.navigationBarColor = AndroidColor.WHITE
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
         val phase = intent.getStringExtra(PHASE_TYPE)?.let { runCatching { PhaseType.valueOf(it) }.getOrNull() }
-        val allowedTools = intent.getStringExtra(ALLOWED_TOOLS) ?: phase?.let(PedagogicalAppPolicy::allowedToolNames).orEmpty()
+        val allowedTools = intent.getStringExtra(ALLOWED_TOOLS) ?: "apenas Morph"
         setContent { ShieldScreen(phase, allowedTools, onReturnToLesson = ::returnToLesson) }
     }
 

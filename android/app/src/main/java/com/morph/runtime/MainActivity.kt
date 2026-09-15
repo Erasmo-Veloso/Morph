@@ -368,7 +368,7 @@ private fun StatusMark(label: String, active: Boolean) {
 
 @Composable
 private fun AllowedAppShortcuts(phase: Phase, context: Context) {
-    val apps = PedagogicalAppPolicy.allowedApps(phase.type)
+    val apps = PedagogicalAppPolicy.allowedApps(phase)
     if (apps.isEmpty()) {
         FeatureCard(Icons.Outlined.Policy, "modo foco", "Esta etapa acontece inteiramente no Morph.") {
             Text("Não há aplicações externas disponíveis agora.", color = Navy, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
