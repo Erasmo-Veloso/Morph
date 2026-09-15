@@ -23,7 +23,9 @@ import {
   Timer,
   X
 } from "lucide-react";
-import type { Capability, CompileResult, LearningCapsule, LearningPhase, PhaseId } from "@/lib/capsule";
+import { withApprovedApps } from "@/lib/capsule";
+import type { ApprovedApp, Capability, CompileResult, LearningCapsule, LearningPhase, PhaseId } from "@/lib/capsule";
+import type { SchoolConfig } from "@/lib/school-store";
 import type { LessonSession } from "@/lib/session-store";
 import type { RuntimeStatus } from "@/lib/runtime-bridge";
 
@@ -131,13 +133,14 @@ function AndroidPhasePreview({ phase }: { phase: PhaseId }) {
 
 export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningCapsule }) {
   const [intent, setIntent] = useState(defaultIntent);
-  const [capsule, setCapsule] = useState(initialCapsule);
+  const [capsule, setCapsule] = useState(() => withApprovedApps(initialCapsule));
   const [session, setSession] = useState<LessonSession | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [view, setView] = useState<"intent" | "configure" | "present">("intent");
   const [selectedPhaseId, setSelectedPhaseId] = useState<PhaseId>("UNDERSTAND");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatus | null>(null);
+  const [appCatalog, setAppCatalog] = useState<ApprovedApp[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const presentationRef = useRef<HTMLElement>(null);
 
@@ -152,6 +155,13 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
     void refresh();
     const timer = window.setInterval(refresh, 1000);
     return () => { active = false; window.clearInterval(timer); };
+  }, []);
+
+  useEffect(() => {
+    void fetch("/api/school", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((payload: { school?: SchoolConfig }) => setAppCatalog(payload.school?.appCatalog ?? []))
+      .catch(() => setAppCatalog([]));
   }, []);
 
   const activePhase = useMemo(() => {
@@ -189,7 +199,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
     setErrorMessage(null);
     try {
       const result = await action();
-      if (result.capsule) setCapsule(result.capsule);
+      if (result.capsule) setCapsule(withApprovedApps(result.capsule));
       if (result.session) setSession(result.session);
       return result;
     } catch (error) {
@@ -225,7 +235,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
     await runAction(() => postJson("/api/session/next"));
   }
 
-  function updatePhase(phaseId: PhaseId, changes: Partial<Pick<LearningPhase, "duration" | "capabilities">>) {
+  function updatePhase(phaseId: PhaseId, changes: Partial<Pick<LearningPhase, "duration" | "capabilities" | "allowed_apps">>) {
     setCapsule((current) => ({
       ...current,
       phases: current.phases.map((phase) => phase.id === phaseId ? { ...phase, ...changes } : phase)
@@ -238,6 +248,14 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
       ? selectedPhase.capabilities.filter((item) => item !== capability)
       : [...selectedPhase.capabilities, capability];
     updatePhase(selectedPhase.id, { capabilities });
+  }
+
+  function toggleAllowedApp(app: ApprovedApp) {
+    const isEnabled = selectedPhase.allowed_apps.some((item) => item.id === app.id);
+    const allowed_apps = isEnabled
+      ? selectedPhase.allowed_apps.filter((item) => item.id !== app.id)
+      : [...selectedPhase.allowed_apps, app];
+    updatePhase(selectedPhase.id, { allowed_apps });
   }
 
   async function confirmCapsule() {
@@ -330,14 +348,23 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
                   <div><p>Etapa seleccionada</p><h2 id="selected-phase-title">{phaseMeta[selectedPhase.id].label}</h2></div>
                   <label className="duration-control">Duração <input type="number" min="1" max="60" value={Math.round(selectedPhase.duration / 60)} onChange={(event) => updatePhase(selectedPhase.id, { duration: Math.max(1, Number(event.target.value) || 1) * 60 })} /> <span>min</span></label>
                 </div>
-                <p className="application-intro">Aplicações disponíveis nesta etapa</p>
+                <p className="application-intro">Capacidades pedagógicas</p>
                 <div className="application-list">
                   {configurableCapabilities[selectedPhase.id].map((capability) => {
                     const Icon = capabilityMeta[capability].icon;
                     return <label className="application-option" key={capability}><input type="checkbox" checked={selectedPhase.capabilities.includes(capability)} onChange={() => toggleCapability(capability)} /><span className="application-check"><Check size={13} /></span><Icon size={17} /><span>{capabilityMeta[capability].label}</span></label>;
                   })}
                 </div>
-                <p className="configuration-note">Outras aplicações permanecem indisponíveis enquanto esta etapa estiver ativa.</p>
+                <div className="phase-app-catalog">
+                  <div className="phase-app-catalog-head"><p>Aplicações reais autorizadas</p><span>{selectedPhase.allowed_apps.length} seleccionada{selectedPhase.allowed_apps.length === 1 ? "" : "s"}</span></div>
+                  {appCatalog.length > 0 ? <div className="application-list app-catalog-list">
+                    {appCatalog.map((app) => <label className="application-option" key={app.id}>
+                      <input type="checkbox" checked={selectedPhase.allowed_apps.some((item) => item.id === app.id)} onChange={() => toggleAllowedApp(app)} />
+                      <span className="application-check"><Check size={13} /></span><FileCode2 size={17} /><span><strong>{app.name}</strong><small>{app.category}</small></span>
+                    </label>)}
+                  </div> : <p className="catalog-empty">O catálogo da escola ainda está a carregar.</p>}
+                </div>
+                <p className="configuration-note">Apenas estas aplicações serão abertas pelo Morph nesta etapa. A lista segue dentro da Capsule e funciona sem Internet.</p>
               </section>
             </div>
 
@@ -393,6 +420,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
             {session ? <section className="runtime-live" aria-label="Estado real do Android" data-enter>
               <div><span>Android</span><strong>{runtimeDevice?.phase ?? "A AGUARDAR DEVICE"}</strong></div>
               <div><span>Conectividade</span><strong>{runtimeDevice?.connectivity ?? "SEM DISPOSITIVO"}</strong></div>
+              <div><span>School Bubble</span><strong>{runtimeDevice?.bubbleStatus ?? "A CONFIRMAR"}</strong></div>
               <div><span>Sentinel</span><strong>{latestRuntimeEvent?.type ?? "SEM EVENTOS"}</strong></div>
             </section> : null}
             {errorMessage ? <p className="action-error" role="alert">{errorMessage}</p> : null}

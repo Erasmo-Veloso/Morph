@@ -1,6 +1,7 @@
 node_modules/
 .morph-session-state.json
 .gradle/
+.kotlin/
 build/
 local.properties
 *.iml

@@ -8,6 +8,7 @@
       "duration": 300,
       "capabilities": ["LEARNING_CONTENT", "GUIDED_EXPLANATION"],
       "restrictions": ["SOCIAL_APPS", "MESSAGING"],
+      "allowed_apps": [],
       "learning_assets": [{ "id": "understand-motion", "title": "Movimento acelerado", "kind": "TEXT", "local": true }],
       "transitions": { "next": "MEASURE" }
     },
@@ -16,6 +17,7 @@
       "duration": 600,
       "capabilities": ["ACCELEROMETER", "CHRONOMETER"],
       "restrictions": ["SOCIAL_APPS", "MESSAGING", "UNRELATED_BROWSER"],
+      "allowed_apps": [{ "id": "calculator", "name": "Calculadora", "category": "CÁLCULO", "package_names": ["com.sec.android.app.popupcalculator", "com.google.android.calculator", "com.android.calculator2"], "preferred_android": { "package_name": "com.sec.android.app.popupcalculator", "activity_name": ".Calculator" } }, { "id": "samsung-notes", "name": "Samsung Notes", "category": "NOTAS", "package_names": ["com.samsung.android.app.notes"] }],
       "learning_assets": [{ "id": "measure-protocol", "title": "Protocolo da experiência", "kind": "PROMPT", "local": true }],
       "transitions": { "next": "ANALYSE" }
     },
@@ -24,6 +26,7 @@
       "duration": 600,
       "capabilities": ["COLLECTED_DATA", "GRAPH", "CALCULATOR"],
       "restrictions": ["SOCIAL_APPS", "MESSAGING"],
+      "allowed_apps": [{ "id": "chrome", "name": "Google Chrome", "category": "NAVEGAÇÃO", "package_names": ["com.android.chrome"] }],
       "learning_assets": [{ "id": "analysis-template", "title": "Gráfico e cálculo", "kind": "DATASET", "local": true }],
       "transitions": { "next": "REFLECT" }
     },
@@ -32,6 +35,7 @@
       "duration": 300,
       "capabilities": ["EXIT_TICKET"],
       "restrictions": ["SOCIAL_APPS", "MESSAGING"],
+      "allowed_apps": [],
       "learning_assets": [{ "id": "exit-ticket", "title": "Conclusão individual", "kind": "PROMPT", "local": true }],
       "transitions": { "next": null }
     }

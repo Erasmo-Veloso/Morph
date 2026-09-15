@@ -19,13 +19,42 @@ export interface LearningAsset {
   local: boolean;
 }
 
+export interface ApprovedApp {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  package_names: string[];
+  preferred_android?: {
+    package_name: string;
+    activity_name?: string;
+  };
+}
+
 export interface LearningPhase {
   id: PhaseType;
   duration: number;
   capabilities: Capability[];
   restrictions: Restriction[];
+  allowed_apps: ApprovedApp[];
   learning_assets: LearningAsset[];
   transitions: { next: PhaseType | null };
+}
+
+export interface SchoolBubble {
+  id: string;
+  school_id: string;
+  name: string;
+  boundary: {
+    type: "CIRCLE";
+    center: { latitude: number; longitude: number };
+    radius_meters: number;
+  };
+  policy: {
+    gps_required: boolean;
+    max_accuracy_meters: number;
+    unknown_location_grace_seconds: number;
+  };
 }
 
 export interface LearningCapsule {
@@ -46,6 +75,7 @@ export interface LearningCapsule {
   valid_from: string;
   valid_until: string;
   signature?: string;
+  school_bubble?: SchoolBubble;
 }
 
 export type LessonCapsule = LearningCapsule;
@@ -88,7 +118,26 @@ export function parseLessonCapsule(input: unknown): LearningCapsule {
   if (input.signature !== undefined && !isNonEmptyString(input.signature)) {
     throw new Error("signature must be a non-empty string");
   }
+  if (input.school_bubble !== undefined) parseSchoolBubble(input.school_bubble);
   return input as unknown as LearningCapsule;
+}
+
+function parseSchoolBubble(input: unknown): SchoolBubble {
+  if (!isRecord(input)) throw new Error("school_bubble must be an object");
+  if (!isNonEmptyString(input.id) || !isNonEmptyString(input.school_id) || !isNonEmptyString(input.name)) {
+    throw new Error("school_bubble id, school_id and name are required");
+  }
+  if (!isRecord(input.boundary) || input.boundary.type !== "CIRCLE" || !isRecord(input.boundary.center)) {
+    throw new Error("school_bubble must define a circular boundary");
+  }
+  const { latitude, longitude } = input.boundary.center;
+  if (typeof latitude !== "number" || latitude < -90 || latitude > 90 || typeof longitude !== "number" || longitude < -180 || longitude > 180 || !isPositiveNumber(input.boundary.radius_meters)) {
+    throw new Error("school_bubble boundary is invalid");
+  }
+  if (!isRecord(input.policy) || typeof input.policy.gps_required !== "boolean" || !isPositiveNumber(input.policy.max_accuracy_meters) || !isPositiveNumber(input.policy.unknown_location_grace_seconds)) {
+    throw new Error("school_bubble policy is invalid");
+  }
+  return input as unknown as SchoolBubble;
 }
 
 function parsePhase(input: unknown, index: number): LearningPhase {
@@ -101,9 +150,25 @@ function parsePhase(input: unknown, index: number): LearningPhase {
   if (!Array.isArray(input.restrictions) || input.restrictions.some((value) => !RESTRICTIONS.includes(value as Restriction))) {
     throw new Error(`phases[${index}].restrictions contains an invalid restriction`);
   }
+  if (!Array.isArray(input.allowed_apps)) throw new Error(`phases[${index}].allowed_apps is required`);
+  const appIds = input.allowed_apps.map((app, appIndex) => parseApprovedApp(app, index, appIndex).id);
+  if (new Set(appIds).size !== appIds.length) throw new Error(`phases[${index}].allowed_apps contains duplicate apps`);
   if (!Array.isArray(input.learning_assets)) throw new Error(`phases[${index}].learning_assets is required`);
   if (!isRecord(input.transitions) || (input.transitions.next !== null && !PHASE_TYPES.includes(input.transitions.next as PhaseType))) {
     throw new Error(`phases[${index}].transitions.next is invalid`);
   }
   return input as unknown as LearningPhase;
+}
+
+function parseApprovedApp(input: unknown, phaseIndex: number, appIndex: number): ApprovedApp {
+  if (!isRecord(input) || !isNonEmptyString(input.id) || !isNonEmptyString(input.name) || !isNonEmptyString(input.category)) {
+    throw new Error(`phases[${phaseIndex}].allowed_apps[${appIndex}] is invalid`);
+  }
+  if (!Array.isArray(input.package_names) || input.package_names.length === 0 || input.package_names.some((name) => !isNonEmptyString(name))) {
+    throw new Error(`phases[${phaseIndex}].allowed_apps[${appIndex}].package_names is invalid`);
+  }
+  if (input.preferred_android !== undefined && (!isRecord(input.preferred_android) || !isNonEmptyString(input.preferred_android.package_name) || (input.preferred_android.activity_name !== undefined && !isNonEmptyString(input.preferred_android.activity_name)))) {
+    throw new Error(`phases[${phaseIndex}].allowed_apps[${appIndex}].preferred_android is invalid`);
+  }
+  return input as unknown as ApprovedApp;
 }

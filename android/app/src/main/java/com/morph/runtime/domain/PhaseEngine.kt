@@ -11,12 +11,22 @@ class PhaseEngine(private val monotonicClock: () -> Long = { SystemClock.elapsed
     private val capabilityManager = CapabilityManager()
     val activeCapabilities: StateFlow<Set<Capability>> = capabilityManager.active
     private var capsule: LessonCapsule? = null
+    private var suspendedPhaseType: PhaseType? = null
 
     fun receive(capsule: LessonCapsule) {
         this.capsule = capsule
         PolicyState.clear()
         capabilityManager.clear()
-        _state.value = RuntimeState(stage = RuntimeStage.CAPSULE_RECEIVED, capsuleId = capsule.id, connectivity = Connectivity.ISOLATED, integrity = Integrity.UNVERIFIED, status = "Capsule recebida")
+        suspendedPhaseType = null
+        _state.value = RuntimeState(
+            stage = RuntimeStage.CAPSULE_RECEIVED,
+            capsuleId = capsule.id,
+            connectivity = Connectivity.ISOLATED,
+            integrity = Integrity.UNVERIFIED,
+            bubbleStatus = if (capsule.schoolBubble == null) BubbleStatus.NOT_REQUIRED else BubbleStatus.CHECKING,
+            schoolBubbleName = capsule.schoolBubble?.name,
+            status = "Capsule recebida"
+        )
     }
 
     fun markReady() {
@@ -27,11 +37,20 @@ class PhaseEngine(private val monotonicClock: () -> Long = { SystemClock.elapsed
 
     fun start() {
         val currentCapsule = capsule ?: return
+        if (!isBubbleEligible()) {
+            _state.value = _state.value.copy(status = "A aguardar confirmação da School Bubble")
+            return
+        }
         transitionTo(currentCapsule.phases.first().type)
     }
 
     fun transitionTo(phaseType: PhaseType) {
         val currentCapsule = capsule ?: return
+        if (!isBubbleEligible()) {
+            if (_state.value.running) suspendForBubble()
+            else _state.value = _state.value.copy(status = "A aula só pode iniciar dentro da School Bubble")
+            return
+        }
         val phase = currentCapsule.phases.firstOrNull { it.type == phaseType } ?: return
         val previous = _state.value.currentPhase
         previous?.let { PolicyState.clear(); capabilityManager.clear() }
@@ -41,10 +60,40 @@ class PhaseEngine(private val monotonicClock: () -> Long = { SystemClock.elapsed
     }
 
     fun end() {
+        suspendedPhaseType = null
         PolicyState.clear()
         capabilityManager.clear()
         _state.value = _state.value.copy(stage = RuntimeStage.FINISHED, currentPhase = null, running = false, status = "Sessão terminada · policy limpa", monotonicStartedAtMs = null)
     }
 
     fun setConnectivity(value: Connectivity) { _state.value = _state.value.copy(connectivity = value) }
+
+    fun currentSchoolBubble(): SchoolBubble? = capsule?.schoolBubble
+
+    fun setBubbleStatus(value: BubbleStatus) {
+        val previous = _state.value.bubbleStatus
+        if (previous == value) return
+        _state.value = _state.value.copy(bubbleStatus = value)
+        if (value == BubbleStatus.OUTSIDE && _state.value.running) {
+            suspendForBubble()
+        } else if ((value == BubbleStatus.INSIDE || value == BubbleStatus.DEMO_READY) && suspendedPhaseType != null) {
+            val phaseToResume = suspendedPhaseType ?: return
+            suspendedPhaseType = null
+            transitionTo(phaseToResume)
+        }
+    }
+
+    private fun isBubbleEligible() = capsule?.schoolBubble == null || _state.value.bubbleStatus in setOf(BubbleStatus.INSIDE, BubbleStatus.DEMO_READY)
+
+    private fun suspendForBubble() {
+        suspendedPhaseType = _state.value.currentPhase?.type
+        PolicyState.clear()
+        capabilityManager.clear()
+        _state.value = _state.value.copy(
+            stage = RuntimeStage.READY,
+            currentPhase = null,
+            running = false,
+            status = "Fora da School Bubble · política suspensa"
+        )
+    }
 }

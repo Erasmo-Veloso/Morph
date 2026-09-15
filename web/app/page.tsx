@@ -1,10 +1,5 @@
-import { TeacherDashboard } from "@/components/TeacherDashboard";
-import { compilePedagogicalIntent } from "@/lib/capsule";
+import { MorphLanding } from "@/components/MorphLanding";
 
 export default function Home() {
-  const initial = compilePedagogicalIntent(
-    "Teach accelerated motion with a short explanation, a practical experiment, analysis of results and reflection."
-  );
-
-  return <TeacherDashboard initialCapsule={initial.capsule} />;
+  return <MorphLanding />;
 }

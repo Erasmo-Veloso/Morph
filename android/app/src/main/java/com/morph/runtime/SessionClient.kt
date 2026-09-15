@@ -2,6 +2,7 @@ package com.morph.runtime
 
 import android.util.Log
 import com.morph.runtime.domain.Connectivity
+import com.morph.runtime.domain.BubbleStatus
 import com.morph.runtime.domain.LessonRuntime
 import com.morph.runtime.domain.PhaseEngine
 import com.morph.runtime.domain.PhaseType
@@ -11,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -24,6 +26,7 @@ class SessionClient(
     private val sentinel: SentinelRepository,
     private val scope: CoroutineScope,
     private val connectivityMonitor: ConnectivityMonitor,
+    private val schoolBubbleMonitor: SchoolBubbleMonitor,
     private val serverUrl: String = BuildConfig.MORPH_SERVER_URL
 ) {
     private val engine: PhaseEngine get() = runtime.phaseEngine
@@ -33,6 +36,26 @@ class SessionClient(
     private var closed = false
     private var serverReachable = false
     private val inFlight = ConcurrentHashMap.newKeySet<String>()
+
+    init {
+        scope.launch {
+            schoolBubbleMonitor.status.collect { status ->
+                val previous = engine.state.value.bubbleStatus
+                engine.setBubbleStatus(status)
+                val state = engine.state.value
+                if (state.capsuleId != null && previous != status) {
+                    sentinel.record(
+                        state.capsuleId,
+                        state.currentPhase?.id ?: "none",
+                        "SCHOOL_BUBBLE_CHANGED",
+                        "state=$status"
+                    )
+                    syncPending()
+                }
+                sendDeviceStatus()
+            }
+        }
+    }
 
     fun connect() {
         closed = false
@@ -63,19 +86,29 @@ class SessionClient(
                 "capsule:assigned" -> {
                     runtime.receive(message.getJSONObject("capsule").toString())
                     runtime.markReady()
+                    schoolBubbleMonitor.updateBubble(runtime.currentSchoolBubble())
+                    // Apply the pitch adapter immediately; the Flow collector still
+                    // observes subsequent changes, but the first render must not race it.
+                    engine.setBubbleStatus(schoolBubbleMonitor.status.value)
                     updateConnectivity()
                     sendDeviceStatus()
                 }
                 "session:state" -> {
                     if (message.optBoolean("running")) {
-                        engine.transitionTo(PhaseType.valueOf(message.getString("phase")))
+                        val phase = PhaseType.valueOf(message.getString("phase"))
+                        if (engine.state.value.running) {
+                            engine.transitionTo(phase)
+                        } else {
+                            engine.start()
+                            if (engine.state.value.running && engine.state.value.currentPhase?.type != phase) engine.transitionTo(phase)
+                        }
                     } else if (message.optString("phase") == "FINISHED") {
                         engine.end()
                     }
                 }
                 "session:started" -> engine.start()
                 "phase:changed" -> { engine.transitionTo(PhaseType.valueOf(message.getJSONObject("phase").getString("id"))); sendDeviceStatus() }
-                "session:ended" -> engine.end()
+                "session:ended" -> { engine.end(); schoolBubbleMonitor.stop() }
                 "session:ack" -> message.optString("eventId").takeIf { it.isNotBlank() }?.let { eventId ->
                     inFlight.remove(eventId)
                     scope.launch { sentinel.markSynced(eventId) }
@@ -102,6 +135,7 @@ class SessionClient(
         socket?.send(JSONObject().put("type", "device:status").put("studentId", "demo-student")
             .put("capsuleId", state.capsuleId).put("phase", state.currentPhase?.type?.name)
             .put("connectivity", state.connectivity.name).put("integrity", state.integrity.name)
+            .put("bubbleStatus", state.bubbleStatus.name).put("bubbleName", state.schoolBubbleName)
             .put("lastSeen", System.currentTimeMillis()).toString())
     }
 
