@@ -44,7 +44,8 @@ location during the pitch.
   the configured Bubble grace period becomes a local safety TTL. If it expires,
   Morph enters policy-free Break.
 - `OUTSIDE_SCHOOL`: the runtime clears `PolicyState` and capabilities; no
-  restriction survives.
+  restriction survives. Returning to a verified context leaves the device in
+  `SCHOOL_IDLE` until the teacher explicitly starts a new Capsule.
 
 The teacher may drive the demo context through the bridge. A production context
 engine must add approximate location, timetable and trusted local-network

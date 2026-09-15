@@ -26,8 +26,9 @@ Updated: 2026-09-15
 - `npm run validate` includes an isolated realtime smoke test covering the
   dashboard bridge (`/bridge/capsule`, `/bridge/command`, `/bridge/status`),
   invalid Capsule rejection, `UNDERSTAND`, `MEASURE`, device status,
-  idempotent duplicate Sentinel ACK and `FINISHED`; it also checks that the
-  public teacher page contains its control surface.
+  idempotent duplicate Sentinel ACK, invalid Sentinel event rejection and
+  `FINISHED`; it also checks that the public teacher page contains its control
+  surface.
 - `npm run validate` also restarts an isolated teacher server and verifies that
   an active `MEASURE` session and its Sentinel idempotency state are restored
   from persisted state.
@@ -69,6 +70,9 @@ Updated: 2026-09-15
   runtime reported `ISOLATED` and Room retained the unsynced connectivity
   event. After restart, `MEASURE` returned `ONLINE`; all queued rows were ACKed
   and the server timeline contained 21 unique IDs for 21 events.
+- Leaving `SCHOOL_VERIFIED` for `OUTSIDE_SCHOOL` during an active Capsule clears
+  policy and remains passive when the verified context returns; a new teacher
+  start is required.
 - Teacher `end` through the Next.js API produced visible `FINISHED`, `Sessão
   terminada · policy limpa`, no Morph connection among active sensorservice
   clients, and no deletion of Sentinel rows.
