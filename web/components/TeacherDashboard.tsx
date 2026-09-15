@@ -296,13 +296,13 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
               </div>
             </div>
             <aside className="intent-device" aria-label="Ecrãs reais do Android" data-enter>
-              <div className="intent-device-copy"><span className="stage-eyebrow">Aula ao vivo <span /></span><h2>A mesma aula.<br /><em>Três funções.</em></h2><p>O telefone começa por ensinar, protege o foco e depois mede o fenómeno.</p></div>
-              <div className="intent-device-sequence" aria-label="Metamorfose do Android">
-                <div className="sequence-item current"><div className="sequence-phone"><Image src={phaseAssets.UNDERSTAND} alt="Android Morph · Compreender" fill sizes="80px" /></div><span>COMPREENDER</span></div>
-                <i className="sequence-arrow" aria-hidden="true">→</i>
-                <div className="sequence-item"><div className="sequence-phone"><Image src="/assets/android/shield.png" alt="Android Morph Shield" fill sizes="80px" /></div><span>SHIELD</span></div>
-                <i className="sequence-arrow" aria-hidden="true">→</i>
-                <div className="sequence-item"><div className="sequence-phone"><Image src={phaseAssets.MEASURE} alt="Android Morph · Medir" fill sizes="80px" /></div><span>MEDIR</span></div>
+              <div className="intent-device-copy">
+                <span className="stage-eyebrow">Aula ao vivo <span /></span>
+                <h2>A mesma aula.<br /><em>Três funções.</em></h2>
+                <p>O telefone começa por ensinar, protege o foco e depois mede o fenómeno.</p>
+              </div>
+              <div className="intent-device-sequence">
+                <video className="intent-motion-video" src="/media/morph-transformation.mp4" poster={phaseAssets.UNDERSTAND} autoPlay muted loop playsInline preload="metadata" aria-label="Demonstração da metamorfose do smartphone entre Compreender, Shield e Medir" />
               </div>
             </aside>
           </section>
