@@ -4,9 +4,9 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Building2, CheckCircle2, CircleAlert, LocateFixed, MapPin, Save, ShieldCheck, Users } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, CircleAlert, LocateFixed, MapPin, PackagePlus, Plus, Save, ShieldCheck, Users } from "lucide-react";
 import type { SchoolBubble } from "@/lib/capsule";
-import type { SchoolConfig } from "@/lib/school-store";
+import type { SchoolApp, SchoolConfig } from "@/lib/school-store";
 
 const SchoolBubbleMap = dynamic(() => import("./SchoolBubbleMap").then((module) => module.SchoolBubbleMap), {
   ssr: false,
@@ -25,6 +25,10 @@ export function SchoolDashboard() {
   const [school, setSchool] = useState<SchoolConfig | null>(null);
   const [bubble, setBubble] = useState<SchoolBubble>(fallbackBubble);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddingApp, setIsAddingApp] = useState(false);
+  const [appName, setAppName] = useState("");
+  const [appCategory, setAppCategory] = useState("PERSONALIZADA");
+  const [appPackages, setAppPackages] = useState("");
   const [message, setMessage] = useState("Clique no mapa para definir o centro real do campus.");
 
   useEffect(() => {
@@ -62,6 +66,30 @@ export function SchoolDashboard() {
     }
   }
 
+  async function addApp() {
+    setIsAddingApp(true);
+    try {
+      const app: SchoolApp = {
+        id: appName,
+        name: appName,
+        category: appCategory,
+        package_names: appPackages.split(/[\n,]/).map((item) => item.trim()).filter(Boolean)
+      };
+      const response = await fetch("/api/school", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ app }) });
+      const payload = await response.json() as { school?: SchoolConfig; error?: string };
+      if (!response.ok || !payload.school) throw new Error(payload.error ?? "Não foi possível adicionar a aplicação.");
+      setSchool(payload.school);
+      setAppName("");
+      setAppCategory("PERSONALIZADA");
+      setAppPackages("");
+      setMessage("Aplicação adicionada ao catálogo. O professor já a pode autorizar por etapa.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível adicionar a aplicação.");
+    } finally {
+      setIsAddingApp(false);
+    }
+  }
+
   return <main className="school-shell">
     <header className="school-nav"><Link href="/" className="landing-brand"><Image src="/brand/morph-lockup.jpg" alt="morph" width={176} height={50} priority /></Link><div className="school-nav-title"><span>PAINEL DA ESCOLA</span><strong>{school?.name ?? "Colégio Horizonte"}</strong></div><Link href="/teacher" className="school-teacher-link">Abrir studio do professor <ArrowRight size={15} /></Link></header>
 
@@ -85,6 +113,8 @@ export function SchoolDashboard() {
     </section>
 
     <section className="school-card school-people-card"><div className="school-card-header"><div><p>COMUNIDADE AUTORIZADA</p><h2>Professor, turma e alunos da demonstração</h2></div><span className="school-tag">DEMO SEM LOGIN</span></div><div className="teacher-list">{(school?.teachers ?? []).map((teacher) => <div className={teacher.id === selectedTeacher?.id ? "teacher-row selected-teacher" : "teacher-row"} key={teacher.id}><div className="teacher-avatar">{teacher.name.split(" ").slice(1, 3).map((part) => part[0]).join("")}</div><div><strong>{teacher.name}</strong><small>{teacher.subject} · {teacher.className}</small></div><span>{teacher.studentIds.length} alunos</span><CheckCircle2 size={18} /></div>)}</div>{selectedTeacher ? <div className="school-assignment"><Users size={17} /><span><strong>{selectedTeacher.name}</strong> pode iniciar Capsules para {selectedTeacher.className}; o runtime de <strong>Aluno demo</strong> reconhece essa relação para a demonstração.</span><Link href="/teacher">Abrir aula <ArrowRight size={15} /></Link></div> : null}</section>
+
+    <section className="school-card school-catalog-card"><div className="school-card-header"><div><p>CATÁLOGO PEDAGÓGICO</p><h2>Aplicações aprovadas pela escola</h2></div><span className="school-tag blue-tag">{school?.appCatalog.length ?? 0} APLICAÇÕES</span></div><p className="school-catalog-intro">O professor escolhe apenas deste catálogo para cada etapa. Os packages seguem dentro da Capsule para o runtime aplicar a regra localmente.</p><div className="school-catalog-list">{(school?.appCatalog ?? []).map((app) => <article key={app.id}><PackagePlus size={17} /><div><strong>{app.name}</strong><small>{app.category} · {app.package_names.length} package{app.package_names.length === 1 ? "" : "s"}</small></div><span>{app.description ?? "Aplicação aprovada"}</span></article>)}</div><form className="school-add-app" onSubmit={(event) => { event.preventDefault(); void addApp(); }}><div><label>Nome<input value={appName} onChange={(event) => setAppName(event.target.value)} placeholder="Ex.: GeoGebra" required /></label><label>Categoria<input value={appCategory} onChange={(event) => setAppCategory(event.target.value)} /></label></div><label>Packages Android <small>um ou mais, separados por vírgula</small><input value={appPackages} onChange={(event) => setAppPackages(event.target.value)} placeholder="org.geogebra.android" required /></label><button type="submit" disabled={isAddingApp}><Plus size={16} /> {isAddingApp ? "A adicionar…" : "Adicionar ao catálogo"}</button></form></section>
     <footer className="school-footer"><Link href="/">← Voltar à landing</Link><span>Protótipo hackathon: as associações são dados demonstráveis; autenticação e gestão multi-escola ficam para a fase seguinte.</span></footer>
   </main>;
 }
