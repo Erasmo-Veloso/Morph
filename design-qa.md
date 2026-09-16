@@ -24,7 +24,8 @@
 
 ## State and interactions tested
 
-- `/teacher` create state with editable lesson intent and working “Compilar a aula” action.
+- `/teacher` create state with editable lesson intent and working “Gerar Cápsula” action.
+- `/teacher` create → configure → preview → live flow was exercised through the browser; runtime polling now preserves configure/preview states and only returns to create after a real session end.
 - `/teacher` live state after starting the bridge session; Android reported online and the live phase view was restored after reload.
 - `/teacher` live state now exposes the reference hierarchy: Capsule title/meta, four-phase rail, active-stage instructions, Android preview, class roster and Sentinel events.
 - `/school` shell and School Bubble configuration rendered without layout regressions.
