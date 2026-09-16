@@ -54,9 +54,9 @@
   "valid_until": "2026-09-19T23:59:59.000Z",
   "signature": "demo-signature-hkt-04",
   "school_bubble": {
-    "id": "bubble-horizonte-main",
-    "school_id": "school-horizonte",
-    "name": "Campus Horizonte",
+    "id": "bubble-demo-main",
+    "school_id": "school-demo",
+    "name": "Campus de demonstração",
     "boundary": {
       "type": "CIRCLE",
       "center": { "latitude": -8.8383, "longitude": 13.2344 },

@@ -15,10 +15,10 @@ export async function GET() {
         phase: "FINISHED"
       },
       enrollment: {
-        schoolId: "school-horizonte",
-        classId: "10A-FISICA",
+        schoolId: "school-demo",
+        classId: "TURMA-DEMO-FISICA",
         studentId: "demo-student",
-        studentName: "Aluno demo",
+        studentName: "Aluno de demonstração",
         deviceId: null,
         deviceName: null,
         pairingCode: "MORPH-2026",

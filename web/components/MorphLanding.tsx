@@ -77,8 +77,8 @@ export function MorphLanding() {
 
         <div className="landing-hero-art" aria-label="Escola, professor e aluno ligados pela Morph" style={{ position: "relative" }}>
           <Image src="/media/morph-ecosystem-hero.png" alt="Ilustração de uma escola, professor e aluno ligados por um smartphone Morph" fill priority sizes="(max-width: 900px) 100vw, 60vw" />
-          <div className="hero-float hero-float-school"><MapPin size={16} /><span><strong>School Bubble</strong>Campus Horizonte</span></div>
-          <div className="hero-float hero-float-session"><span className="live-dot" /><span><strong>Aula activa</strong>Física · 10.º A</span></div>
+          <div className="hero-float hero-float-school"><MapPin size={16} /><span><strong>School Bubble</strong>Campus de demonstração</span></div>
+          <div className="hero-float hero-float-session"><span className="live-dot" /><span><strong>Aula activa</strong>Física · Turma demo</span></div>
           <div className="hero-float hero-float-phase"><Gauge size={16} /><span><strong>Fase 02</strong>Medir</span></div>
         </div>
       </section>

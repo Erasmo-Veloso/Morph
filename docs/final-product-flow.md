@@ -24,7 +24,7 @@ VERIFIED`.
 1. The school panel declares the demo student, class and one primary device.
 2. It exposes the local pairing code `MORPH-2026` for the current demo run.
 3. Android enters the code once. The runtime binds the device ID to `Aluno
-   demo`, `10A-FISICA` and `Colégio Horizonte`.
+   de demonstração`, `TURMA-DEMO-FISICA` and `Escola de demonstração`.
 4. The teacher panel exposes the association state before the session begins.
 
 The current implementation is a local, single-device pairing authority for the

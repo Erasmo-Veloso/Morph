@@ -1,4 +1,8 @@
 import type { LearningCapsule } from "./capsule";
+import { loadEnvConfig } from "@next/env";
+import path from "node:path";
+
+loadEnvConfig(path.resolve(process.cwd(), ".."));
 
 export type RuntimeCommand = "start" | "next" | "end" | "context:outside" | "context:unverified" | "context:verified";
 

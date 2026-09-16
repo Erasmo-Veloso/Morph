@@ -143,7 +143,7 @@ try {
     lastSeen: Date.now()
   }));
   const deviceStatus = await nextMessage((message) => message.type === "device:status");
-  if (deviceStatus.status.classId !== "10A-FISICA") throw new Error("Expected classId in device status");
+  if (deviceStatus.status.classId !== "TURMA-DEMO-FISICA") throw new Error("Expected classId in device status");
   if (deviceStatus.status.studentId !== "demo-student" || deviceStatus.status.enrollment !== "PAIRED") {
     throw new Error("Device status was not reconciled with the enrollment association");
   }

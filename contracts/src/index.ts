@@ -25,6 +25,8 @@ export interface LearningAsset {
   title: string;
   kind: "TEXT" | "PROMPT" | "DATASET";
   local: boolean;
+  activity?: string;
+  evidence?: string;
 }
 
 export interface ApprovedApp {
@@ -68,6 +70,9 @@ export interface SchoolBubble {
 export interface LearningCapsule {
   id: string;
   version: 1;
+  title?: string;
+  subject?: string;
+  school_level?: string;
   objective: string;
   phases: LearningPhase[];
   integrity_policy: {

@@ -198,7 +198,7 @@ private fun EnrollmentState(onPair: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Eyebrow("DISPOSITIVO · ASSOCIAÇÃO")
         Text("Associar este telefone.", color = Navy, fontSize = 32.sp, fontWeight = FontWeight.Bold)
-        Text("O código liga este dispositivo ao Aluno demo e ao Colégio Horizonte. Sem associação, a escola não aplica qualquer política.", color = Muted, fontSize = 16.sp, lineHeight = 22.sp)
+        Text("O código liga este dispositivo ao Aluno de demonstração e à Escola de demonstração. Sem associação, a escola não aplica qualquer política.", color = Muted, fontSize = 16.sp, lineHeight = 22.sp)
         BlueRule()
         OutlinedTextField(value = code, onValueChange = { code = it.uppercase(Locale.ROOT) }, singleLine = true, label = { Text("Código de associação") }, placeholder = { Text("MORPH-2026") }, modifier = Modifier.fillMaxWidth())
         Button(onClick = { onPair(code) }, enabled = code.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) {
@@ -210,7 +210,7 @@ private fun EnrollmentState(onPair: (String) -> Unit) {
 @Composable
 private fun SchoolIdleState() {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Eyebrow("COLÉGIO HORIZONTE · CONTEXTO VERIFICADO")
+        Eyebrow("ESCOLA DE DEMONSTRAÇÃO · CONTEXTO VERIFICADO")
         Text("Na escola.\nSem restrições.", color = Navy, fontSize = 33.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold)
         Text("A escola reconhece o contexto, mas só uma Capsule activa pode orientar este telefone.", color = Muted, fontSize = 17.sp, lineHeight = 24.sp)
         BlueRule()

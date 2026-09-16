@@ -8,12 +8,12 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const port = Number(process.env.PORT ?? 8787);
 const fixtureCapsule = JSON.parse(await readFile(join(root, process.env.MORPH_CAPSULE_FILE ?? "fixtures/physics-capsule.json"), "utf8"));
 const stateFile = process.env.MORPH_STATE_FILE ?? join(root, ".morph-session-state.json");
-const classId = process.env.MORPH_CLASS_ID ?? "10A-FISICA";
+const classId = process.env.MORPH_CLASS_ID ?? "TURMA-DEMO-FISICA";
 const demoEnrollment = {
-  schoolId: "school-horizonte",
+  schoolId: "school-demo",
   classId,
   studentId: "demo-student",
-  studentName: "Aluno demo",
+  studentName: "Aluno de demonstração",
   deviceId: null,
   deviceName: null,
   pairingCode: process.env.MORPH_DEMO_PAIRING_CODE ?? "MORPH-2026",

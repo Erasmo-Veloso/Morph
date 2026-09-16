@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
+import { loadEnvConfig } from "@next/env";
 import os from "os";
+import path from "path";
+
+const repositoryRoot = path.resolve(process.cwd(), "..");
+loadEnvConfig(repositoryRoot);
 
 function getHostIps(): string[] {
   const interfaces = os.networkInterfaces();
@@ -20,7 +25,8 @@ const nextConfig: NextConfig = {
     useTypeScriptCli: false,
   },
   turbopack: {
-    root: process.cwd(),
+    // The canonical Capsule contract lives beside web/ in the repository.
+    root: repositoryRoot,
   },
 };
 

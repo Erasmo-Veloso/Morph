@@ -15,28 +15,28 @@ export type SchoolConfig = {
 };
 
 const defaultSchool: SchoolConfig = {
-  id: "school-horizonte",
-  name: "Colégio Horizonte",
+  id: "school-demo",
+  name: "Escola de demonstração",
   bubble: {
-    id: "bubble-horizonte-main",
-    school_id: "school-horizonte",
-    name: "Campus Horizonte",
+    id: "bubble-demo-main",
+    school_id: "school-demo",
+    name: "Campus de demonstração",
     boundary: { type: "CIRCLE", center: { latitude: -8.8383, longitude: 13.2344 }, radius_meters: 180 },
     policy: { gps_required: true, max_accuracy_meters: 100, unknown_location_grace_seconds: 300 }
   },
   teachers: [
-    { id: "teacher-ana", name: "Prof. Ana Matias", subject: "Física", className: "10.º A", studentIds: ["demo-student", "student-2", "student-3"] },
-    { id: "teacher-joel", name: "Prof. Joel Manuel", subject: "Matemática", className: "9.º B", studentIds: ["student-4", "student-5"] },
-    { id: "teacher-lurdes", name: "Prof. Lurdes Paulo", subject: "Biologia", className: "11.º C", studentIds: ["student-6", "student-7"] }
+    { id: "teacher-demo", name: "Professor da demonstração", subject: "Física", className: "Turma de demonstração", studentIds: ["demo-student", "student-2", "student-3"] },
+    { id: "teacher-math", name: "Professor de Matemática", subject: "Matemática", className: "Turma B", studentIds: ["student-4", "student-5"] },
+    { id: "teacher-biology", name: "Professor de Biologia", subject: "Biologia", className: "Turma C", studentIds: ["student-6", "student-7"] }
   ],
   students: [
-    { id: "demo-student", name: "Aluno demo", className: "10.º A" },
-    { id: "student-2", name: "Marta Costa", className: "10.º A" },
-    { id: "student-3", name: "André Silva", className: "10.º A" },
-    { id: "student-4", name: "Nuno Paulo", className: "9.º B" },
-    { id: "student-5", name: "Rita Miguel", className: "9.º B" },
-    { id: "student-6", name: "Ivo Manuel", className: "11.º C" },
-    { id: "student-7", name: "Sara João", className: "11.º C" }
+    { id: "demo-student", name: "Aluno de demonstração", className: "Turma de demonstração" },
+    { id: "student-2", name: "Aluno 02", className: "Turma de demonstração" },
+    { id: "student-3", name: "Aluno 03", className: "Turma de demonstração" },
+    { id: "student-4", name: "Aluno 04", className: "Turma B" },
+    { id: "student-5", name: "Aluno 05", className: "Turma B" },
+    { id: "student-6", name: "Aluno 06", className: "Turma C" },
+    { id: "student-7", name: "Aluno 07", className: "Turma C" }
   ],
   appCatalog: [
     { id: "calculator", name: "Calculadora", category: "CÁLCULO", description: "Cálculos rápidos durante a experiência.", package_names: ["com.sec.android.app.popupcalculator", "com.google.android.calculator", "com.android.calculator2"], preferred_android: { package_name: "com.sec.android.app.popupcalculator", activity_name: ".Calculator" } },
@@ -64,8 +64,8 @@ export function getSchool(): SchoolConfig {
 }
 
 export function saveSchoolBubble(candidate: SchoolBubble): SchoolConfig {
-  if (candidate.boundary.type !== "CIRCLE" || !Number.isFinite(candidate.boundary.center.latitude) || !Number.isFinite(candidate.boundary.center.longitude) || candidate.boundary.center.latitude < -90 || candidate.boundary.center.latitude > 90 || candidate.boundary.center.longitude < -180 || candidate.boundary.center.longitude > 180 || candidate.boundary.radius_meters < 50 || candidate.boundary.radius_meters > 2000) {
-    throw new Error("A School Bubble precisa de um centro válido e de um raio entre 50 e 2000 metros.");
+  if (candidate.boundary.type !== "CIRCLE" || !Number.isFinite(candidate.boundary.center.latitude) || !Number.isFinite(candidate.boundary.center.longitude) || candidate.boundary.center.latitude < -90 || candidate.boundary.center.latitude > 90 || candidate.boundary.center.longitude < -180 || candidate.boundary.center.longitude > 180 || candidate.boundary.radius_meters < 5 || candidate.boundary.radius_meters > 2000) {
+    throw new Error("A School Bubble precisa de um centro válido e de um raio entre 5 e 2000 metros.");
   }
   if (candidate.policy.max_accuracy_meters < 10 || candidate.policy.unknown_location_grace_seconds < 30) {
     throw new Error("A política de localização da School Bubble é inválida.");

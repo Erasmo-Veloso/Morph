@@ -68,7 +68,7 @@ class PhaseEngineTest {
     fun `demo-ready School Bubble starts immediately without location`() {
         val engine = PhaseEngine { 1234L }
         engine.setEnrollment(DeviceEnrollment.ENROLLED)
-        engine.receive(capsule(SchoolBubble("bubble", "Colégio Horizonte", GeoPoint(-8.83, 13.23), 180, 100, 300)))
+        engine.receive(capsule(SchoolBubble("bubble", "Escola de demonstração", GeoPoint(-8.83, 13.23), 180, 100, 300)))
         engine.markReady()
 
         engine.start()
@@ -92,7 +92,7 @@ class PhaseEngineTest {
         var now = 1234L
         val engine = PhaseEngine { now }
         engine.setEnrollment(DeviceEnrollment.ENROLLED)
-        engine.receive(capsule(SchoolBubble("bubble", "Colégio Horizonte", GeoPoint(-8.83, 13.23), 180, 100, 300)))
+        engine.receive(capsule(SchoolBubble("bubble", "Escola de demonstração", GeoPoint(-8.83, 13.23), 180, 100, 300)))
         engine.markReady()
         engine.setBubbleStatus(BubbleStatus.DEMO_READY)
         engine.start()
@@ -109,7 +109,7 @@ class PhaseEngineTest {
         var now = 1234L
         val engine = PhaseEngine { now }
         engine.setEnrollment(DeviceEnrollment.ENROLLED)
-        engine.receive(capsule(SchoolBubble("bubble", "Colégio Horizonte", GeoPoint(-8.83, 13.23), 180, 100, 300)))
+        engine.receive(capsule(SchoolBubble("bubble", "Escola de demonstração", GeoPoint(-8.83, 13.23), 180, 100, 300)))
         engine.markReady()
         engine.setBubbleStatus(BubbleStatus.DEMO_READY)
         engine.start()
@@ -136,7 +136,7 @@ class PhaseEngineTest {
     fun `outside context stays passive when verified context returns`() {
         val engine = PhaseEngine { 1234L }
         engine.setEnrollment(DeviceEnrollment.ENROLLED)
-        engine.receive(capsule(SchoolBubble("bubble", "Colégio Horizonte", GeoPoint(-8.83, 13.23), 180, 100, 300)))
+        engine.receive(capsule(SchoolBubble("bubble", "Escola de demonstração", GeoPoint(-8.83, 13.23), 180, 100, 300)))
         engine.markReady()
         engine.setBubbleStatus(BubbleStatus.DEMO_READY)
         engine.start()

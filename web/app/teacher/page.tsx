@@ -3,7 +3,7 @@ import { compilePedagogicalIntent } from "@/lib/capsule";
 
 export default function TeacherPage() {
   const initial = compilePedagogicalIntent(
-    "Teach accelerated motion with a short explanation, a practical experiment, analysis of results and reflection."
+    "Ensinar movimento acelerado com uma explicação breve, uma experiência prática, análise de resultados e reflexão."
   );
 
   return <TeacherDashboard initialCapsule={initial.capsule} />;

@@ -19,6 +19,8 @@ export type LearningAsset = {
   title: string;
   kind: "TEXT" | "PROMPT" | "DATASET";
   local: boolean;
+  activity?: string;
+  evidence?: string;
 };
 
 /** A school-approved Android application carried inside the offline Capsule. */
@@ -62,6 +64,9 @@ export type SchoolBubble = {
 export type LearningCapsule = {
   id: string;
   version: 1;
+  title?: string;
+  subject?: string;
+  school_level?: string;
   objective: string;
   phases: LearningPhase[];
   integrity_policy: {
@@ -92,26 +97,24 @@ const phaseDurations: Record<PhaseId, number> = {
   REFLECT: 300
 };
 
-const demoApps = {
-  calculator: { id: "calculator", name: "Calculadora", category: "CÁLCULO", description: "Cálculos rápidos durante a experiência.", package_names: ["com.sec.android.app.popupcalculator", "com.google.android.calculator", "com.android.calculator2"], preferred_android: { package_name: "com.sec.android.app.popupcalculator", activity_name: ".Calculator" } },
-  samsungNotes: { id: "samsung-notes", name: "Samsung Notes", category: "NOTAS", description: "Registo local de observações e resultados.", package_names: ["com.samsung.android.app.notes"], preferred_android: { package_name: "com.samsung.android.app.notes", activity_name: ".memolist.MemoListActivity" } },
-  chrome: { id: "chrome", name: "Google Chrome", category: "NAVEGAÇÃO", description: "Consulta de uma fonte indicada pelo professor.", package_names: ["com.android.chrome"], preferred_android: { package_name: "com.android.chrome" } }
-} satisfies Record<string, ApprovedApp>;
-
 export function compilePedagogicalIntent(intent: string): CompileResult {
   const normalizedIntent = intent.trim();
-  const objective =
-    normalizedIntent.length > 0
-      ? "Understand accelerated motion through explanation, measurement, analysis and reflection"
-      : "Understand accelerated motion";
+  const subject = inferSubject(normalizedIntent);
+  const title = inferTitle(normalizedIntent, subject);
+  const objective = normalizedIntent.length > 0
+    ? `Compreender ${title.toLocaleLowerCase("pt-PT")} através de exploração, prática, análise e reflexão.`
+    : "Explorar um tema através de compreensão, prática, análise e reflexão.";
 
   const now = new Date();
   const validUntil = new Date(now.getTime() + 6 * 60 * 60 * 1000);
 
   return {
     capsule: {
-      id: "physics-accelerated-motion-001",
+      id: `capsule-${slug(`${subject}-${title}`) || "aula-geral"}-${shortHash(normalizedIntent || title)}`,
       version: 1,
+      title,
+      subject,
+      school_level: "Ensino básico e secundário",
       objective,
       phases: [
         {
@@ -123,9 +126,11 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           learning_assets: [
             {
               id: "asset-understand-motion",
-              title: "Short explanation: accelerated motion",
+              title: `Introdução: ${title}`,
               kind: "TEXT",
-              local: true
+              local: true,
+              activity: `Explorar os conceitos essenciais de ${title.toLocaleLowerCase("pt-PT")}.`,
+              evidence: "Hipótese inicial registada pelo aluno."
             }
           ],
           transitions: { next: "MEASURE" }
@@ -135,13 +140,15 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           duration: phaseDurations.MEASURE,
           capabilities: ["ACCELEROMETER", "GYROSCOPE", "CAMERA", "CHRONOMETER"],
           restrictions: ["SOCIAL_APPS", "MESSAGING", "UNRELATED_BROWSER"],
-          allowed_apps: [demoApps.calculator, demoApps.samsungNotes],
+          allowed_apps: [],
           learning_assets: [
             {
               id: "asset-measure-protocol",
-              title: "Group experiment protocol",
+              title: `Atividade prática: ${title}`,
               kind: "PROMPT",
-              local: true
+              local: true,
+              activity: "Executar a atividade proposta e recolher observações ou medições.",
+              evidence: "Registo local de observações e dados."
             }
           ],
           transitions: { next: "ANALYSE" }
@@ -151,13 +158,15 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           duration: phaseDurations.ANALYSE,
           capabilities: ["COLLECTED_DATA", "GRAPH", "CALCULATOR"],
           restrictions: ["SOCIAL_APPS", "MESSAGING"],
-          allowed_apps: [demoApps.chrome],
+          allowed_apps: [],
           learning_assets: [
             {
               id: "asset-analysis-template",
-              title: "Local graph and calculation workspace",
+              title: `Análise de resultados: ${title}`,
               kind: "DATASET",
-              local: true
+              local: true,
+              activity: "Organizar os dados, identificar padrões e justificar uma conclusão.",
+              evidence: "Interpretação local dos dados recolhidos."
             }
           ],
           transitions: { next: "REFLECT" }
@@ -171,9 +180,11 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
           learning_assets: [
             {
               id: "asset-exit-ticket",
-              title: "Personal conclusion prompt",
+              title: "Reflexão final",
               kind: "PROMPT",
-              local: true
+              local: true,
+              activity: "Explicar o que foi aprendido e o que ainda merece investigação.",
+              evidence: "Conclusão individual guardada no dispositivo."
             }
           ],
           transitions: { next: null }
@@ -199,11 +210,53 @@ export function compilePedagogicalIntent(intent: string): CompileResult {
       signature: "demo-signature-hkt-04"
     },
     notes: [
-      "Deterministic compiler output for the Hacktudo MVP lesson.",
-      "Capsule is offline-ready and does not depend on the original teacher text.",
-      "Sentinel events are limited to policy integrity, not student content."
+      "Fallback determinístico agnóstico de disciplina para o MVP Hacktudo.",
+      "A Capsule fica pronta para revisão do professor antes de ser publicada no runtime.",
+      "O compilador não permite que conteúdo pedagógico escolha packages ou altere a policy Android.",
+      "Os eventos Sentinel ficam limitados à integridade da policy, não ao conteúdo do aluno."
     ]
   };
+}
+
+const subjectHints: ReadonlyArray<[string, string]> = [
+  ["física", "Física"],
+  ["accelerated motion", "Física"],
+  ["movimento acelerado", "Física"],
+  ["matemática", "Matemática"],
+  ["biologia", "Biologia"],
+  ["química", "Química"],
+  ["história", "História"],
+  ["geografia", "Geografia"],
+  ["português", "Português"],
+  ["inglês", "Inglês"],
+  ["programação", "Programação"],
+  ["informática", "Informática"]
+];
+
+function inferSubject(intent: string) {
+  const normalized = intent.toLocaleLowerCase("pt-PT");
+  return subjectHints.find(([hint]) => normalized.includes(hint))?.[1] ?? "Aula interdisciplinar";
+}
+
+function inferTitle(intent: string, subject: string) {
+  const cleaned = intent
+    .replace(/^(ensinar|ensina|teach|teaches|aula sobre|explicar|explorar)\s+/i, "")
+    .split(/\s+(?:com|with)\s+/i, 1)[0]
+    .split(/[.!?;]/, 1)[0]
+    ?.trim()
+    .replace(/\s+/g, " ");
+  if (!cleaned || cleaned.length < 3) return subject === "Aula interdisciplinar" ? "Nova aula" : subject;
+  return cleaned.slice(0, 72);
+}
+
+function slug(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("en-US").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function shortHash(value: string) {
+  let hash = 0;
+  for (const character of value) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return hash.toString(36).slice(0, 7);
 }
 
 /** A Capsule compiled before the school catalogue carries no app selection.

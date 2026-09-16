@@ -19,7 +19,8 @@
 
 ## Recording path
 
-1. Open `http://localhost:3001/school`. Show Aluno demo, 10.º A, the device
+1. Open `http://localhost:3001/school`. Show the Aluno de demonstração, a turma
+   de demonstração and the device
    association and pairing code `MORPH-2026`.
 2. Enter the code in Android. The Android screen becomes **Na escola. Sem
    restrições.**
@@ -32,7 +33,7 @@
 For the local Android emulator, start the server with `MORPH_EMULATOR_DEMO=1`
 to add the already-installed Chrome package to the Capsule's restricted list.
 This is an explicit emulator profile. The canonical fixture also carries the
-Campus Horizonte Bubble contract; the pitch APK reports it as `DEMO_READY` and
+Campus de demonstração Bubble contract; the pitch APK reports it as `DEMO_READY` and
 does not claim to evaluate GPS.
 5. Tap **Next phase** on the teacher page. Android receives `phase:changed`,
    enters `MEASURE`, and starts the real accelerometer.

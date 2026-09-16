@@ -84,7 +84,7 @@ Updated: 2026-09-15
 - A physical handset and physical movement are not proven in this environment.
   The sensor graph proof uses the API 36 emulator's virtual SensorManager input
   (`adb emu sensor`), not a claim of human movement.
-- The canonical fixture carries the configured Campus Horizonte School Bubble.
+- The canonical fixture carries the configured Campus de demonstração School Bubble.
   The current APK uses its explicit `DEMO_READY` adapter rather than evaluating
   GPS; Chrome enforcement is available through the emulator demo profile.
 - Release signing, video capture and capsule cryptographic signatures remain

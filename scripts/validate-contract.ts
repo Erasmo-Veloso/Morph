@@ -13,7 +13,7 @@ assert.deepEqual(capsule.integrity_policy.sentinel_events, [
   "CONNECTIVITY_CHANGED",
   "SCHOOL_CONTEXT_LOST"
 ]);
-assert.equal(capsule.school_bubble?.name, "Campus Horizonte");
+assert.equal(capsule.school_bubble?.name, "Campus de demonstração");
 assert.throws(() => parseLessonCapsule({ ...capsule, version: 99 }), /Unsupported capsule version/);
 assert.throws(() => parseLessonCapsule({ ...capsule, phases: [{ ...capsule.phases[0], id: "BROKEN" }] }), /invalid id/);
 assert.throws(() => parseLessonCapsule({ ...capsule, phases: [capsule.phases[0], capsule.phases[0]] }), /Phase types must be unique/);

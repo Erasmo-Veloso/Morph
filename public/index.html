@@ -369,7 +369,7 @@
         ];
         return {
           id: `${slug}-v1`, version: 1, objective: objectiveInput.value.trim() || 'Construir uma aprendizagem com propósito.',
-          lesson: { subject, topic, classId: '10A-FISICA', teacherId: 'teacher-demo', durationMinutes: 30 },
+          lesson: { subject, topic, classId: 'TURMA-DEMO-FISICA', teacherId: 'teacher-demo', durationMinutes: 30 },
           phases: phaseShape.map(([id, duration, capabilities, restrictions], index) => ({ id, duration, capabilities, restrictions, learning_assets: [{ id: `${slug}-${id.toLowerCase()}`, title: topic, kind: id === 'UNDERSTAND' ? 'TEXT' : id === 'ANALYSE' ? 'DATASET' : 'PROMPT', local: true }], transitions: { next: phaseShape[index + 1]?.[0] ?? null } })),
           integrity_policy: { enabled: true, sentinel_events: ['RESTRICTED_ACCESS_ATTEMPT', 'CONNECTIVITY_CHANGED'], privacy: 'POLICY_INTEGRITY_ONLY' },
           offline_policy: { enabled: true, assets: 'LOCAL_CACHE', events: 'LOCAL_QUEUE' },

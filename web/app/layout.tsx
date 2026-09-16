@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./studio-reference.css";
 
 export const metadata: Metadata = {
   title: "morph | Aulas que transformam",

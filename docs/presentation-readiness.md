@@ -10,7 +10,8 @@ phase, lesson or school context ends.
 
 1. **Problem and premise — 0:00–0:30.** A phone is not inherently a
    distraction; its purpose is undefined in class.
-2. **Association and consent boundary — 0:30–1:00.** Show Aluno demo, 10.º A,
+2. **Association and consent boundary — 0:30–1:00.** Show o Aluno de demonstração,
+   a turma de demonstração,
    the Android device and the pairing code. State that being enrolled or at
    school does not itself activate restrictions.
 3. **Teacher orchestration — 1:00–1:40.** Create/select *Movimento Acelerado*,

@@ -17,7 +17,7 @@ class PolicyAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val packageName = event?.packageName?.toString() ?: return
         val policy = PolicyState.current() ?: return
-        if (packageName == packageNameForOwnApp() || packageName in policy.allowedPackages || packageName in systemPackages) return
+        if (PolicyDecision.isAllowed(packageName, packageNameForOwnApp(), policy.allowedPackages, systemPackages)) return
         val now = System.currentTimeMillis()
         // Chrome emits several window events while it is booting. Keep one
         // shield response per package window so a late BACK event cannot

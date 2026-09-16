@@ -12,15 +12,20 @@ import {
   ChartLine,
   Check,
   ChevronRight,
+  Clock3,
   Compass,
   Eye,
   FileCode2,
   Gauge,
   LoaderCircle,
+  MoreVertical,
+  Monitor,
   NotebookPen,
   Play,
+  ShieldCheck,
   Sparkles,
   Timer,
+  Users,
   X
 } from "lucide-react";
 import { withApprovedApps } from "@/lib/capsule";
@@ -28,6 +33,8 @@ import type { ApprovedApp, Capability, CompileResult, LearningCapsule, LearningP
 import type { SchoolConfig } from "@/lib/school-store";
 import type { LessonSession } from "@/lib/session-store";
 import type { RuntimeStatus } from "@/lib/runtime-bridge";
+import type { AppRecommendation, LessonDraft } from "@/lib/capsule-planner";
+import { StudioShell, StudioSectionLabel } from "./StudioShell";
 
 const defaultIntent =
   "Ensinar movimento acelerado com uma explicação breve, experimento prático, análise de resultados e reflexão.";
@@ -102,7 +109,7 @@ const configurableCapabilities: Record<PhaseId, Capability[]> = {
   REFLECT: ["EXIT_TICKET"]
 };
 
-type ApiResponse = { session?: LessonSession } & Partial<CompileResult>;
+type ApiResponse = { session?: LessonSession; source?: "groq" | "fallback"; draft?: LessonDraft } & Partial<CompileResult>;
 
 async function postJson(path: string, body?: unknown): Promise<ApiResponse> {
   const response = await fetch(path, {
@@ -115,7 +122,6 @@ async function postJson(path: string, body?: unknown): Promise<ApiResponse> {
   if (!response.ok) throw new Error(payload.error ?? `Request failed: ${response.status}`);
   return payload;
 }
-
 function AndroidAnalysisPreview() {
   return <div className="android-analysis-screen" aria-label="Pré-visualização nativa Android da fase Analisar">
     <div className="android-analysis-status"><span>11:52</span><span>5G&nbsp; ◢&nbsp; ▣</span></div>
@@ -155,6 +161,8 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatus | null>(null);
   const [appCatalog, setAppCatalog] = useState<ApprovedApp[]>([]);
+  const [appRecommendations, setAppRecommendations] = useState<Partial<Record<PhaseId, AppRecommendation[]>>>({});
+  const [plannerSource, setPlannerSource] = useState<"groq" | "fallback" | null>(null);
   const [school, setSchool] = useState<SchoolConfig | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const presentationRef = useRef<HTMLElement>(null);
@@ -216,7 +224,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const latestRuntimeEvent = runtimeEvents.find((event) => priorityRuntimeEventTypes.has(event.type))
     ?? runtimeEvents[0];
   const enrollment = runtimeStatus?.enrollment;
-  const demoTeacher = school?.teachers.find((teacher) => teacher.id === "teacher-ana") ?? school?.teachers[0];
+  const demoTeacher = school?.teachers.find((teacher) => teacher.id === "teacher-demo") ?? school?.teachers[0];
   const isSessionActive = runtimeStatus ? runtimeStatus.session.running : Boolean(session);
   const runtimeStage = runtimeDevice?.phase
     ?? (runtimeDevice?.authority === "BREAK"
@@ -263,8 +271,14 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   }
 
   async function compileLesson() {
+    if (!intent.trim()) {
+      setErrorMessage("Descreva a aula antes de pedir uma sugestão.");
+      return;
+    }
     const result = await runAction(() => postJson("/api/compile", { intent }));
     if (!result) return;
+    setPlannerSource(result.source ?? "fallback");
+    setAppRecommendations(Object.fromEntries((result.draft?.phases ?? []).map((phase) => [phase.id, phase.recommended_apps])));
     setSelectedPhaseId("UNDERSTAND");
     setView("configure");
   }
@@ -323,50 +337,57 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   }
 
   const isRuntimeConnected = Boolean(runtimeDevice);
+  const liveStudents = (school?.students ?? [])
+    .filter((student) => student.className === demoTeacher?.className)
+    .slice(0, 8);
+  const activePhaseMinutes = Math.max(1, Math.round(presentationPhase.duration / 60));
+  const phaseInstruction = presentationPhase.learning_assets[0]?.activity
+    ?? (presentationPhase.id === "REFLECT"
+      ? "Os alunos consolidam o que aprenderam e registam uma reflexão pessoal sobre a experiência."
+      : "Os alunos exploram o conceito, executam a atividade e registam evidências antes de avançar.");
 
   return (
-    <main className="presentation-shell">
-      <header className="presentation-header">
-        <a className="brand" href="#presentation" aria-label="morph">
-          <Image src="/brand/morph-lockup.jpg" alt="morph · aulas que transformam" width={210} height={58} priority />
-        </a>
-        <div className="header-context"><span>TEACHER STUDIO</span><strong>HACKTUDO 2026</strong></div>
-        <div className="header-status">
-          <span className="status-dot" />
-          <span>{runtimeDevice ? `Android · ${runtimeDevice.connectivity}` : "Aguardando Android"}</span>
-        </div>
-        <button className="preview-trigger" type="button" onClick={() => setIsPreviewOpen(true)}>
-          <Eye size={16} /> Ver dispositivo
-        </button>
-      </header>
-
+    <StudioShell active="capsules" status={runtimeDevice ? `Android · ${runtimeDevice.connectivity}` : "Aguardando Android"}>
       <section className="presentation" id="presentation" ref={presentationRef}>
         {view === "intent" ? (
           <section className="intent-stage" aria-labelledby="intent-title">
             <div className="stage-copy" data-enter>
-              <p className="stage-eyebrow">Passo 01 <span /> Intenção pedagógica</p>
-              <h1 id="intent-title">O que os alunos vão aprender hoje?</h1>
-              <p>Descreva a aula. A Morph transforma a sua intenção numa experiência executável no telefone.</p>
+              <StudioSectionLabel>Passo 01</StudioSectionLabel>
+              <h1 id="intent-title">Criar a Cápsula</h1>
+              <p>Descreva a sua aula e o Morph organiza-a automaticamente numa sequência didáctica pronta a usar.</p>
+            </div>
+            <div className="capsule-summary" data-enter aria-label="Resumo da nova Cápsula">
+              <Image src="/assets/android/understand.png" alt="Pré-visualização da Cápsula" width={92} height={62} />
+              <div><span>Nova Cápsula</span><strong>{capsule.title ?? "Nova Cápsula"}</strong><small>{capsule.subject ?? "Aula interdisciplinar"}</small></div>
+              <div><span>Turma</span><strong>10.º B</strong></div><div><span>Duração total</span><strong>30 min</strong></div><div><span>Estado</span><b>Rascunho</b></div>
             </div>
             <div className="intent-composer" data-enter>
-              <div className="composer-heading"><div><span className="composer-kicker">Criar Capsule</span><strong>Uma aula. Quatro funções.</strong></div><span className="composer-index">01</span></div>
-              <label htmlFor="lesson-intent">Descreve a aula que queres dar</label>
+              <div className="composer-heading"><div><span className="composer-kicker">O que pretende explorar?</span><strong>Escreva de forma simples e natural.</strong></div><span className="composer-index">01</span></div>
+              <p className="composer-description">Descreva o tema, os objectivos, o tipo de actividades ou qualquer ideia.</p>
+              <label htmlFor="lesson-intent">Descrição da aula</label>
               <textarea
                 id="lesson-intent"
                 value={intent}
                 onChange={(event) => setIntent(event.target.value)}
                 placeholder="Descreva o que os alunos vão aprender e fazer..."
               />
+              <div className="intent-suggestions">
+                <span>Sugestões rápidas</span>
+                <div>
+                  {["Explicação curta", "Experiência prática", "Análise de dados", "Reflexão final"].map((suggestion) => <button type="button" key={suggestion} onClick={() => setIntent((current) => current.includes(suggestion) ? current : `${current} ${suggestion.toLowerCase()}.`)}>+&nbsp; {suggestion}</button>)}
+                </div>
+              </div>
               <div className="composer-footer">
-                <span><Check size={15} /> Funciona sem Internet</span>
+                <button className="secondary-action" type="button" onClick={() => setIntent(defaultIntent)}>Usar modelo</button>
                 <button className="main-action" type="button" disabled={isBusy} onClick={compileLesson}>
                   {isBusy ? <LoaderCircle className="spin" size={18} /> : <Sparkles size={18} />}
-                  Compilar a aula
+                  Gerar Cápsula <ArrowRight size={17} />
                 </button>
               </div>
+              <div className="composer-proof"><Check size={15} /> O Morph cria a estrutura com base em princípios de aprendizagem activa.</div>
               <div className="intent-proof">
                 <div className="proof-copy"><span>O mesmo smartphone</span><strong>metamorfoseia-se em cada fase.</strong></div>
-                <div className="proof-rail" aria-label="Fases da Capsule">
+                <div className="proof-rail" aria-label="Fases da Cápsula">
                   {capsule.phases.map((phase, index) => <span className={index === 0 ? "proof-node active" : "proof-node"} key={phase.id}><i />{phaseMeta[phase.id].label}</span>)}
                 </div>
               </div>
@@ -386,8 +407,8 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
           <section className="configuration-stage" aria-labelledby="configuration-title">
             <div className="configuration-heading" data-enter>
               <p className="stage-eyebrow">Passo 02 <span /> Configurar a Cápsula</p>
-              <h1 id="configuration-title">Defina o que o telefone pode fazer em cada etapa.</h1>
-              <p>As aplicações seleccionadas tornam-se capacidades disponíveis apenas durante a etapa escolhida.</p>
+              <h1 id="configuration-title">Configure a Cápsula</h1>
+              <p>Defina o que os seus alunos vão fazer, que ferramentas podem usar e como esta etapa contribui para a aprendizagem.</p>
             </div>
 
             <div className="configuration-workspace" data-enter>
@@ -414,7 +435,14 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
                   })}
                 </div>
                 <div className="phase-app-catalog">
-                  <div className="phase-app-catalog-head"><p>Aplicações reais autorizadas</p><span>{selectedPhase.allowed_apps.length} seleccionada{selectedPhase.allowed_apps.length === 1 ? "" : "s"}</span></div>
+                  <div className="phase-app-catalog-head"><div><p>Rever aplicações para esta etapa</p><small>{plannerSource === "groq" ? "Sugestões geradas pelo Groq" : "Sugestões locais"}</small></div><span>{selectedPhase.allowed_apps.length} seleccionada{selectedPhase.allowed_apps.length === 1 ? "" : "s"}</span></div>
+                  {(appRecommendations[selectedPhase.id] ?? []).length > 0 ? <div className="app-suggestion-list" aria-label="Sugestões da IA">
+                    {(appRecommendations[selectedPhase.id] ?? []).map((recommendation) => {
+                      const app = appCatalog.find((item) => item.id === recommendation.id);
+                      if (!app) return null;
+                      return <div className="app-suggestion" key={recommendation.id}><div><strong>{app.name}</strong><small>{recommendation.reason}</small></div><span>Sugerida</span></div>;
+                    })}
+                  </div> : <p className="catalog-empty">A IA não encontrou uma aplicação necessária para esta etapa. A decisão continua a ser do professor.</p>}
                   {appCatalog.length > 0 ? <div className="application-list app-catalog-list">
                     {appCatalog.map((app) => <label className="application-option" key={app.id}>
                       <input type="checkbox" checked={selectedPhase.allowed_apps.some((item) => item.id === app.id)} onChange={() => toggleAllowedApp(app)} />
@@ -422,7 +450,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
                     </label>)}
                   </div> : <p className="catalog-empty">O catálogo da escola ainda está a carregar.</p>}
                 </div>
-                <p className="configuration-note">Apenas estas aplicações serão abertas pelo Morph nesta etapa. A lista segue dentro da Capsule e funciona sem Internet.</p>
+                <p className="configuration-note">As sugestões não autorizam nada automaticamente. Apenas as aplicações seleccionadas pelo professor seguem na Cápsula, com bloqueio por defeito para as restantes.</p>
               </section>
             </div>
 
@@ -431,19 +459,44 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
           </section>
         ) : (
           <section className="phase-stage" aria-labelledby="phase-title">
-            <div className="phase-stage-top" data-enter>
-              <p className="stage-eyebrow">Learning Capsule <span /> Movimento acelerado</p>
-              <span className="phase-count">Etapa {presentationIndex + 1} de {capsule.phases.length}</span>
+            <div className="live-session-heading" data-enter>
+              <div>
+                <button className="live-back-link" type="button" onClick={() => setView("intent")}><ArrowRight size={15} /> Voltar à cápsula</button>
+                <h1>{capsule.title ?? "Cápsula ao vivo"}</h1>
+                <p>{capsule.objective}</p>
+              </div>
+              <div className="live-heading-actions">
+                <span className="live-pill"><i /> {isSessionActive ? "AO VIVO" : "PRÉ-VISUALIZAÇÃO"}</span>
+                <button type="button" aria-label="Mais opções"><MoreVertical size={20} /></button>
+              </div>
             </div>
 
-            <div className="phase-demo-layout">
-              <div className={`phase-focus phase-${presentationPhase.id.toLowerCase()}`} data-enter>
-                <div className="phase-symbol"><PhaseIcon size={38} /></div>
-                <p className="phase-kicker">{isSessionActive ? "Fase ativa" : "Cápsula compilada"}</p>
-                <h1 id="phase-title">{phaseMeta[presentationPhase.id].label}</h1>
-                <p className="phase-description">{phaseMeta[presentationPhase.id].description}</p>
-                <div className="phase-detail"><FileCode2 size={17} /> {phaseMeta[presentationPhase.id].detail}</div>
-              </div>
+            <div className="live-session-meta" data-enter>
+              <div><Users size={21} /><span>Turma<strong>{demoTeacher?.className ?? "10.º B"}</strong></span></div>
+              <div><Users size={21} /><span>Alunos<strong>{demoTeacher?.studentIds.length ?? 0} online</strong></span></div>
+              <div><Timer size={21} /><span>Duração<strong>{activePhaseMinutes} min / 30 min</strong></span></div>
+            </div>
+
+            <nav className="live-phase-rail" aria-label="Etapas da aula" data-enter>
+              {capsule.phases.map((phase, index) => {
+                const Icon = phaseMeta[phase.id].icon;
+                const isCurrent = phase.id === presentationPhase.id;
+                return <div className={isCurrent ? "live-phase-card current" : "live-phase-card"} key={phase.id}>
+                  <span className="live-phase-index">{String(index + 1).padStart(2, "0")}</span>
+                  <Icon size={23} />
+                  <span><strong>{phaseMeta[phase.id].label}</strong><small>{phaseMeta[phase.id].description}</small></span>
+                  {isCurrent ? <b>{activePhaseMinutes} min</b> : null}
+                </div>;
+              })}
+            </nav>
+
+            <div className="live-workspace" data-enter>
+              <article className={`live-instruction-panel phase-${presentationPhase.id.toLowerCase()}`}>
+                <div className="live-panel-heading"><span>Instruções da etapa</span><b><Clock3 size={16} /> {activePhaseMinutes} min restantes</b></div>
+                <div className="live-phase-title"><div className="phase-symbol"><PhaseIcon size={34} /></div><div><p className="phase-kicker">Etapa {presentationIndex + 1} de {capsule.phases.length}</p><h2 id="phase-title">{phaseMeta[presentationPhase.id].label}</h2></div></div>
+                <p className="live-instruction-copy">{phaseInstruction}</p>
+                <div className="live-info-banner">No final desta etapa, os dados serão automaticamente guardados no portefólio de cada aluno.</div>
+              </article>
               <aside className="phase-device-card" aria-label="Tela real do Android" data-enter>
                 <div className="phase-device-meta"><span>ANDROID RUNTIME</span><strong>{isSessionActive ? (isRuntimeConnected ? "AO VIVO" : "SIMULAÇÃO") : "PREVIEW"}</strong></div>
                 <div className="phase-device-image"><AndroidPhasePreview phase={presentationPhase.id} /></div>
@@ -451,16 +504,19 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
               </aside>
             </div>
 
-            <nav className="phase-navigation" aria-label="Etapas da aula" data-enter>
-              {capsule.phases.map((phase, index) => {
-                const isCurrent = phase.id === presentationPhase.id;
-                return <div className={isCurrent ? "phase-nav-item current" : "phase-nav-item"} key={phase.id}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <strong>{phaseMeta[phase.id].label}</strong>
-                  {index < capsule.phases.length - 1 ? <ChevronRight size={16} /> : null}
-                </div>;
-              })}
-            </nav>
+            <div className="live-lower-grid" data-enter>
+              <section className="live-students-panel" aria-label="Alunos da sessão">
+                <div className="live-panel-heading"><span>Alunos ({demoTeacher?.studentIds.length ?? 0})</span><span className="live-tabs"><b>Em aula ({Math.max(0, (demoTeacher?.studentIds.length ?? 0) - 2)})</b><span>Local (2)</span><span>Com alertas (1)</span></span></div>
+                <div className="live-student-grid">
+                  {liveStudents.map((student, index) => <div className="live-student" key={student.id}><span className={`student-dot ${index === 2 ? "warning" : ""}`} /><div><strong>{student.name}</strong><small>Última actividade há {index + 1} min</small></div><span className={index === 1 ? "student-status local" : "student-status"}>{index === 1 ? "Local" : "Em aula"}</span></div>)}
+                </div>
+              </section>
+              <aside className="sentinel-panel" aria-label="Sentinel">
+                <div className="live-panel-heading"><span><ShieldCheck size={21} /> Sentinel</span><b className="sentinel-ok"><i /> Tudo está bem</b></div>
+                <p>Acompanhamento em tempo real</p>
+                {(runtimeEvents.length > 0 ? runtimeEvents.slice(0, 3) : [{ id: "session", type: "SESSION", payload: "A sessão está pronta", occurredAt: Date.now(), receivedAt: Date.now(), phaseId: presentationPhase.id }]).map((event) => <div className="sentinel-event" key={event.id}><span>●</span><div><strong>{runtimeEventLabel[event.type] ?? "Sessão actualizada"}</strong><small>{event.payload}</small></div></div>)}
+              </aside>
+            </div>
 
             <div className="stage-action" data-enter>
               {!isSessionActive ? (
@@ -504,6 +560,6 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
           </section>
         </div>
       ) : null}
-    </main>
+    </StudioShell>
   );
 }
