@@ -28,6 +28,7 @@ import type { ApprovedApp, Capability, CompileResult, LearningCapsule, LearningP
 import type { SchoolConfig } from "@/lib/school-store";
 import type { LessonSession } from "@/lib/session-store";
 import type { RuntimeStatus } from "@/lib/runtime-bridge";
+import { StudioShell, StudioSectionLabel } from "./StudioShell";
 
 const defaultIntent =
   "Ensinar movimento acelerado com uma explicação breve, experimento prático, análise de resultados e reflexão.";
@@ -320,28 +321,19 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const isRuntimeConnected = Boolean(runtimeDevice);
 
   return (
-    <main className="presentation-shell">
-      <header className="presentation-header">
-        <a className="brand" href="#presentation" aria-label="morph">
-          <Image src="/brand/morph-lockup.jpg" alt="morph · aulas que transformam" width={210} height={58} priority />
-        </a>
-        <div className="header-context"><span>TEACHER STUDIO</span><strong>HACKTUDO 2026</strong></div>
-        <div className="header-status">
-          <span className="status-dot" />
-          <span>{runtimeDevice ? `Android · ${runtimeDevice.connectivity}` : "Aguardando Android"}</span>
-        </div>
-        <button className="preview-trigger" type="button" onClick={() => setIsPreviewOpen(true)}>
-          <Eye size={16} /> Ver dispositivo
-        </button>
-      </header>
-
+    <StudioShell active="capsules" status={runtimeDevice ? `Android · ${runtimeDevice.connectivity}` : "Aguardando Android"}>
       <section className="presentation" id="presentation" ref={presentationRef}>
         {view === "intent" ? (
           <section className="intent-stage" aria-labelledby="intent-title">
             <div className="stage-copy" data-enter>
-              <p className="stage-eyebrow">Passo 01 <span /> Intenção pedagógica</p>
+              <StudioSectionLabel>Passo 01 · Intenção pedagógica</StudioSectionLabel>
               <h1 id="intent-title">O que os alunos vão aprender hoje?</h1>
               <p>Descreva a aula. A Morph transforma a sua intenção numa experiência executável no telefone.</p>
+            </div>
+            <div className="capsule-summary" data-enter aria-label="Resumo da nova Capsule">
+              <Image src="/assets/android/understand.png" alt="Pré-visualização da Capsule" width={92} height={62} />
+              <div><span>Nova Capsule</span><strong>Movimento Acelerado</strong><small>Explorar o movimento no mundo real</small></div>
+              <div><span>Turma</span><strong>10.º B</strong></div><div><span>Duração total</span><strong>30 min</strong></div><div><span>Estado</span><b>Rascunho</b></div>
             </div>
             <div className="intent-composer" data-enter>
               <div className="composer-heading"><div><span className="composer-kicker">Criar Capsule</span><strong>Uma aula. Quatro funções.</strong></div><span className="composer-index">01</span></div>
@@ -499,6 +491,6 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
           </section>
         </div>
       ) : null}
-    </main>
+    </StudioShell>
   );
 }

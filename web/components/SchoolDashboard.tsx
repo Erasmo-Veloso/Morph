@@ -1,13 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Building2, CheckCircle2, CircleAlert, LocateFixed, MapPin, PackagePlus, Plus, Save, ShieldCheck, Users } from "lucide-react";
 import type { SchoolBubble } from "@/lib/capsule";
 import type { SchoolApp, SchoolConfig } from "@/lib/school-store";
 import type { RuntimeStatus } from "@/lib/runtime-bridge";
+import { StudioShell } from "./StudioShell";
 
 const SchoolBubbleMap = dynamic(() => import("./SchoolBubbleMap").then((module) => module.SchoolBubbleMap), {
   ssr: false,
@@ -105,8 +105,8 @@ export function SchoolDashboard() {
     }
   }
 
-  return <main className="school-shell">
-    <header className="school-nav"><Link href="/" className="landing-brand"><Image src="/brand/morph-lockup.jpg" alt="morph" width={176} height={50} priority /></Link><div className="school-nav-title"><span>PAINEL DA ESCOLA</span><strong>{school?.name ?? "Colégio Horizonte"}</strong></div><Link href="/teacher" className="school-teacher-link">Abrir studio do professor <ArrowRight size={15} /></Link></header>
+  return <StudioShell active="classes" status={runtime?.devices.at(-1) ? "Android · ONLINE" : "School Bubble pronta"}>
+    <main className="school-shell">
 
     <section className="school-hero"><div><p className="landing-eyebrow"><span /> VISÃO DA SCHOOL BUBBLE</p><h1>O contexto certo<br />para cada aula.</h1><p>A escola define uma área pedagógica, associa a comunidade e entrega uma regra que o dispositivo poderá executar localmente.</p></div><div className="school-health"><span className="live-dot" /><strong>School Bubble pronta para demo</strong><small>GPS será validado após o pitch</small></div></section>
 
@@ -131,5 +131,6 @@ export function SchoolDashboard() {
 
     <section className="school-card school-catalog-card"><div className="school-card-header"><div><p>CATÁLOGO PEDAGÓGICO</p><h2>Aplicações aprovadas pela escola</h2></div><span className="school-tag blue-tag">{(school?.appCatalog ?? []).length} APLICAÇÕES</span></div><p className="school-catalog-intro">O professor escolhe apenas deste catálogo para cada etapa. Os packages seguem dentro da Capsule para o runtime aplicar a regra localmente.</p><div className="school-catalog-list">{(school?.appCatalog ?? []).map((app) => <article key={app.id}><PackagePlus size={17} /><div><strong>{app.name}</strong><small>{app.category} · {app.package_names.length} package{app.package_names.length === 1 ? "" : "s"}</small></div><span>{app.description ?? "Aplicação aprovada"}</span></article>)}</div><form className="school-add-app" onSubmit={(event) => { event.preventDefault(); void addApp(); }}><div><label>Nome<input value={appName} onChange={(event) => setAppName(event.target.value)} placeholder="Ex.: GeoGebra" required /></label><label>Categoria<input value={appCategory} onChange={(event) => setAppCategory(event.target.value)} /></label></div><label>Packages Android <small>um ou mais, separados por vírgula</small><input value={appPackages} onChange={(event) => setAppPackages(event.target.value)} placeholder="org.geogebra.android" required /></label><button type="submit" disabled={isAddingApp}><Plus size={16} /> {isAddingApp ? "A adicionar…" : "Adicionar ao catálogo"}</button></form></section>
     <footer className="school-footer"><Link href="/">← Voltar à landing</Link><span>Protótipo hackathon: as associações são dados demonstráveis; autenticação e gestão multi-escola ficam para a fase seguinte.</span></footer>
-  </main>;
+    </main>
+  </StudioShell>;
 }

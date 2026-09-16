@@ -1,34 +1,45 @@
-# Morph UI design QA
+# Morph visual QA
 
-## Reference and scope
+## Source visual truth
 
-- Visual contract: `docs/mvp-visual-spec.md`.
-- Primary Morph reference: `docs/morph-white-editorial.png`.
-- Competitive benchmark inspected live: `https://sabiaa.gabrielrichard.dev/#painel-professor`.
-- Preview verified at `http://localhost:3001/` on 2026-09-14.
+- Desktop create state: `/tmp/codex-clipboard-ecbb2c70-0faa-46db-ba73-4e31052c2c1c.png` — 1448 × 1086 px.
+- Desktop configure state: `/tmp/codex-clipboard-5d00e24f-2782-456a-8b1c-9d314af86d18.png` — 1448 × 1086 px.
+- Desktop live state: `/tmp/codex-clipboard-479736aa-8cc7-4d29-9260-a4c765a1d300.png` — 1448 × 1086 px.
+- Mobile runtime references: `/tmp/codex-clipboard-e9caf551-0125-467b-8325-415c04842383.png`, `/tmp/codex-clipboard-980e90d7-5402-404b-9923-fbf27241ffcd.png` — 941 × 1672 px each.
 
-## Acceptance checks
+## Implementation evidence
 
-| Check | Evidence | Result |
-| --- | --- | --- |
-| Brand lockup and editorial white system | Teacher Studio uses the supplied Morph lockup, navy type, quiet neutral canvas and blue interaction accent. | PASS |
-| Capsule is visible before configuration | First view exposes `Criar Capsule`, pedagogical intent, four phases and an autoplay product proof: `Compreender` → `Shield` → `Medir`. | PASS |
-| Teacher flow is executable | `Compilar a aula` → phase capability configuration → `Confirmar Cápsula` → presentation view. | PASS |
-| Device transformation is legible | Presentation view changes from `Compreender` to `Medir` with a different Android product screen and phase role. | PASS |
-| Measure is concrete | The Android `measure.png` screen exposes the accelerometer and the teacher view labels the device as the measuring instrument. | PASS |
-| Analyse is not a duplicate of Measure | Native Android `ActivePhaseState` now includes a local analysis summary; the teacher preview has a distinct analysis layout with graph and deterministic values. | PASS |
-| Reflect closes the learning loop | Presentation view uses the finished Android screen and the `Refletir` phase copy. | PASS |
-| No false live-device claim | When no handset is connected, the UI shows `SIMULAÇÃO`, `A AGUARDAR DEVICE` and `SEM DISPOSITIVO`. | PASS |
-| Motion communicates state change | GSAP entrance transitions run on view/phase changes and are skipped when `prefers-reduced-motion` is enabled. | PASS |
-| Competitive first-viewport proof | Against Sabiá's live-class dashboard, Morph now uses the stronger product-specific visual anchor: the same lesson changing device function across three real Android screens. | PASS |
-| Motion proof for deck and web | The landing first viewport embeds the rendered Morph transformation video: the three device functions move from Compreender through Shield to Medir. The Android app has a separate native Compose metamorphosis splash. | PASS |
-| Primary engineering gates | Web typecheck/build, root validation and Android unit tests were executed during this pass. | PASS |
+- Create state: `/tmp/morph-teacher-reference-final.png` — 1440 × 1100 px, Chrome headless, CSS viewport 1440 × 1100, device scale factor 1.
+- Live state: `/tmp/morph-teacher-live-rendered.png` — 1440 × 1100 px, Chrome headless, CSS viewport 1440 × 1100, device scale factor 1.
+- School state: `/tmp/morph-school-reference-final.png` — 1440 × 1100 px, Chrome headless, CSS viewport 1440 × 1100, device scale factor 1.
+- Density normalization: screenshots were compared at their native pixel dimensions; no device frame was used for the desktop comparison. Mobile references were used to preserve the existing Android content direction, not compared against the desktop shell.
 
-## Known boundary
+## State and interactions tested
 
-The browser preview is verified against the local bridge and the Android source;
-physical-handset rendering and accessibility-service behaviour still require a
-connected Android device. The preview intentionally labels that state instead
-of presenting it as hardware evidence.
+- `/teacher` create state with editable lesson intent and working “Compilar a aula” action.
+- `/teacher` live state after starting the bridge session; Android reported online and the live phase view was restored after reload.
+- `/school` shell and School Bubble configuration rendered without layout regressions.
+- Teacher navigation, primary action styles, responsive sidebar collapse and mobile bottom navigation were checked.
 
-## Final result: passed
+## Findings
+
+- [P3] The supplied mock includes handwritten decorative illustration marks that are not present in the current asset set. Existing Morph media and the official Morph logo were retained instead of fabricating replacement artwork.
+- [P3] The live Teacher Studio is intentionally denser and more operational than the supplied marketing-like live mock because it exposes the actual phase, Android runtime and Sentinel state required by the hackathon demo.
+
+## Required fidelity surfaces
+
+- Fonts and typography: large dark-indigo editorial headings, compact uppercase labels, readable body copy and strong numeric hierarchy are implemented with the existing system font stack and updated weights/letter spacing.
+- Spacing and layout rhythm: shared 220 px desktop sidebar, 76 px topbar, 14 px surfaces, consistent card padding and responsive collapse rules are implemented as shared shell tokens.
+- Colors and visual tokens: neutral light-blue canvas, white surfaces, indigo text, blue primary actions and green status indicators match the supplied direction while preserving Morph branding.
+- Image quality and asset fidelity: the existing official Morph logo, Android screenshots and project media are used; no logo redraw or placeholder logo was introduced.
+- Copy and content: the demo remains Physics-specific only inside the demo Capsule; the shell and navigation use neutral educational language.
+
+## Comparison history
+
+1. Initial shell comparison found the intent screen vertically mis-composed because legacy grid areas overrode the new two-column layout.
+2. Fixed by adding explicit final-precedence grid areas for heading, Capsule summary, composer and live preview.
+3. Re-captured `/tmp/morph-teacher-reference-final.png`; the source and implementation now share the intended hierarchy and responsive shell with no actionable P0/P1/P2 mismatch.
+
+## Final result
+
+passed
