@@ -154,6 +154,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const [intent, setIntent] = useState(defaultIntent);
   const [capsule, setCapsule] = useState(() => withApprovedApps(initialCapsule));
   const [session, setSession] = useState<LessonSession | null>(null);
+  const [hasStartedSession, setHasStartedSession] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [view, setView] = useState<"intent" | "configure" | "present">("intent");
   const [selectedPhaseId, setSelectedPhaseId] = useState<PhaseId>("UNDERSTAND");
@@ -182,16 +183,24 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
     if (runtimeStatus.session.running) {
       // The bridge is authoritative after a reload. Restore the live view
       // instead of leaving the teacher on the initial intent screen.
+      setHasStartedSession(true);
       if (!session) setView("present");
       return;
     }
-    if (!session || session.status !== "RUNNING") {
-      setSession(null);
-      setView("intent");
-      setSelectedPhaseId("UNDERSTAND");
-      setIsPreviewOpen(false);
+    if (!runtimeStatus.session.running) {
+      // A capsule can legitimately be in the configure view without an
+      // active runtime session. Only clear the live view after a real session
+      // has ended; otherwise polling races the compile action and sends the
+      // teacher back to the first screen.
+      if (hasStartedSession || session?.status === "RUNNING") {
+        setSession(null);
+        setHasStartedSession(false);
+        setView("intent");
+        setSelectedPhaseId("UNDERSTAND");
+        setIsPreviewOpen(false);
+      }
     }
-  }, [runtimeStatus, session]);
+  }, [hasStartedSession, runtimeStatus, session, view]);
 
   useEffect(() => {
     void fetch("/api/school", { cache: "no-store" })
@@ -273,7 +282,8 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   }
 
   async function startSimulation() {
-    await runAction(() => postJson("/api/session/start"));
+    const result = await runAction(() => postJson("/api/session/start"));
+    if (result?.session) setHasStartedSession(true);
   }
 
   async function advanceSimulation() {
@@ -281,6 +291,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
       const result = await runAction(() => postJson("/api/session/end"));
       if (!result) return;
       setSession(null);
+      setHasStartedSession(false);
       setView("intent");
       setSelectedPhaseId("UNDERSTAND");
       setIsPreviewOpen(false);
@@ -348,7 +359,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
             </div>
             <div className="capsule-summary" data-enter aria-label="Resumo da nova Capsule">
               <Image src="/assets/android/understand.png" alt="Pré-visualização da Capsule" width={92} height={62} />
-              <div><span>Nova Capsule</span><strong>Movimento Acelerado</strong><small>Explorar o movimento no mundo real</small></div>
+              <div><span>Nova Cápsula</span><strong>Movimento Acelerado</strong><small>Explorar o movimento no mundo real</small></div>
               <div><span>Turma</span><strong>10.º B</strong></div><div><span>Duração total</span><strong>30 min</strong></div><div><span>Estado</span><b>Rascunho</b></div>
             </div>
             <div className="intent-composer" data-enter>
@@ -397,7 +408,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
           <section className="configuration-stage" aria-labelledby="configuration-title">
             <div className="configuration-heading" data-enter>
               <p className="stage-eyebrow">Passo 02 <span /> Configurar a Cápsula</p>
-              <h1 id="configuration-title">Configure a Cápsula</h1>
+              <h1 id="configuration-title">Configurar a Cápsula</h1>
               <p>Defina o que os seus alunos vão fazer, que ferramentas podem usar e como esta etapa contribui para a aprendizagem.</p>
             </div>
 
