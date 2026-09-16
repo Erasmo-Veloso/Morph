@@ -172,11 +172,19 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   }, []);
 
   useEffect(() => {
-    if (runtimeStatus?.session.running || !session || session.status !== "RUNNING") return;
-    setSession(null);
-    setView("intent");
-    setSelectedPhaseId("UNDERSTAND");
-    setIsPreviewOpen(false);
+    if (!runtimeStatus) return;
+    if (runtimeStatus.session.running) {
+      // The bridge is authoritative after a reload. Restore the live view
+      // instead of leaving the teacher on the initial intent screen.
+      if (!session) setView("present");
+      return;
+    }
+    if (!session || session.status !== "RUNNING") {
+      setSession(null);
+      setView("intent");
+      setSelectedPhaseId("UNDERSTAND");
+      setIsPreviewOpen(false);
+    }
   }, [runtimeStatus, session]);
 
   useEffect(() => {
