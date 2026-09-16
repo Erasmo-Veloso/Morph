@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -32,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Eco
@@ -39,7 +41,12 @@ import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.NotificationsNone
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Policy
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
@@ -119,67 +126,74 @@ private fun MorphScreen(app: MorphApplication) {
     Box(modifier = Modifier.fillMaxSize()) {
         Surface(modifier = Modifier.fillMaxSize(), color = Paper) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
+                modifier = Modifier.fillMaxSize()
             ) {
-                BrandHeader()
-                RuntimeStrip(runtime.connectivity, runtime.running, runtime.bubbleStatus)
-                if (runtime.running && runtime.connectivity != Connectivity.ONLINE) {
-                    Text(
-                        when (runtime.connectivity) {
-                            Connectivity.LOCAL -> "LOCAL · A aula continua neste dispositivo."
-                            Connectivity.ISOLATED -> "OFFLINE · A aula continua neste dispositivo."
-                            Connectivity.ONLINE -> ""
-                        },
-                        color = Muted,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                if (runtime.running && phase != null) AllowedAppShortcuts(phase, context)
-                if (runtime.schoolBubbleName != null && runtime.bubbleStatus == BubbleStatus.DEMO_READY) {
-                    Text("${runtime.schoolBubbleName} · pronta para demonstração", color = PrimaryBlue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
-                TextButton(
-                    onClick = { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
-                    modifier = Modifier.align(Alignment.Start)
+                StudentTopBar()
+                SchoolContextPill()
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    Icon(Icons.Outlined.Settings, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Abrir permissões de protecção", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                }
+                    RuntimeStrip(runtime.connectivity, runtime.running, runtime.bubbleStatus)
+                    if (runtime.running && runtime.connectivity != Connectivity.ONLINE) {
+                        Text(
+                            when (runtime.connectivity) {
+                                Connectivity.LOCAL -> "LOCAL · A aula continua neste dispositivo."
+                                Connectivity.ISOLATED -> "OFFLINE · A aula continua neste dispositivo."
+                                Connectivity.ONLINE -> ""
+                            },
+                            color = Muted,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    if (runtime.running && phase != null) CapsuleHeader(phase.type)
+                    if (runtime.running && phase != null) AllowedAppShortcuts(phase, context)
+                    if (runtime.schoolBubbleName != null && runtime.bubbleStatus == BubbleStatus.DEMO_READY) {
+                        Text("${runtime.schoolBubbleName} · pronta para demonstração", color = PrimaryBlue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    TextButton(
+                        onClick = { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+                        modifier = Modifier.align(Alignment.Start)
+                    ) {
+                        Icon(Icons.Outlined.Settings, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Abrir permissões de protecção", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
 
-                AnimatedContent(targetState = Triple(runtime.enrollment, runtime.schoolContext, runtime.stage), label = "runtime-stage") { (_, schoolContext, stage) ->
-                    when {
-                        runtime.enrollment == DeviceEnrollment.UNENROLLED -> EnrollmentState(onPair = app.session::pairDevice)
-                        schoolContext == SchoolContext.OUTSIDE_SCHOOL -> OutsideSchoolState()
-                        schoolContext == SchoolContext.SCHOOL_UNVERIFIED && runtime.running -> UnverifiedContextState()
-                        schoolContext == SchoolContext.SCHOOL_VERIFIED && !runtime.running && stage == RuntimeStage.IDLE -> SchoolIdleState()
-                        else -> when (stage) {
-                        RuntimeStage.IDLE,
-                        RuntimeStage.CAPSULE_RECEIVED,
-                        RuntimeStage.READY -> WelcomeState(runtime.status)
-                        RuntimeStage.UNDERSTAND -> UnderstandState(phase?.title ?: "Compreender")
-                        RuntimeStage.MEASURE -> MeasureState(samples, magnitude)
-                        RuntimeStage.ANALYSE -> AnalyseState(samples)
-                        RuntimeStage.REFLECT -> ReflectState(runtime.capsuleId, app.reflections)
-                        RuntimeStage.BREAK -> BreakState(onFinish = app.session::finishBreak)
-                        RuntimeStage.FINISHED -> FinishedState()
+                    AnimatedContent(targetState = Triple(runtime.enrollment, runtime.schoolContext, runtime.stage), label = "runtime-stage") { (_, schoolContext, stage) ->
+                        when {
+                            runtime.enrollment == DeviceEnrollment.UNENROLLED -> EnrollmentState(onPair = app.session::pairDevice)
+                            schoolContext == SchoolContext.OUTSIDE_SCHOOL -> OutsideSchoolState()
+                            schoolContext == SchoolContext.SCHOOL_UNVERIFIED && runtime.running -> UnverifiedContextState()
+                            schoolContext == SchoolContext.SCHOOL_VERIFIED && !runtime.running && stage == RuntimeStage.IDLE -> SchoolIdleState()
+                            else -> when (stage) {
+                                RuntimeStage.IDLE,
+                                RuntimeStage.CAPSULE_RECEIVED,
+                                RuntimeStage.READY -> WelcomeState(runtime.status)
+                                RuntimeStage.UNDERSTAND -> UnderstandState(phase?.title ?: "Compreender")
+                                RuntimeStage.MEASURE -> MeasureState(samples, magnitude)
+                                RuntimeStage.ANALYSE -> AnalyseState(samples)
+                                RuntimeStage.REFLECT -> ReflectState(runtime.capsuleId, app.reflections)
+                                RuntimeStage.BREAK -> BreakState(onFinish = app.session::finishBreak)
+                                RuntimeStage.FINISHED -> FinishedState()
+                            }
                         }
                     }
-                }
 
-                Text(
-                    "A Capsule muda o que o smartphone pode fazer em cada etapa.",
-                    color = Muted,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-                FooterMark()
+                    Text(
+                        "A Capsule muda o que o smartphone pode fazer em cada etapa.",
+                        color = Muted,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    FooterMark()
+                }
+                StudentBottomNav()
             }
         }
 
@@ -221,11 +235,22 @@ private fun SchoolIdleState() {
 @Composable
 private fun OutsideSchoolState() {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Eyebrow("MORPH · PASSIVO")
-        Text("Fora do contexto\nescolar.", color = Navy, fontSize = 33.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold)
-        Text("O teu smartphone está totalmente disponível. Nenhuma política escolar permanece activa.", color = Muted, fontSize = 17.sp, lineHeight = 24.sp)
-        BlueRule()
-        FeatureCard(Icons.Outlined.Eco, "autonomia", "Sem Capsule. Sem restrições.") { Text("Morph volta a observar apenas o contexto pedagógico, não o uso pessoal.", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+        Eyebrow("MORPH · FORA DA ESCOLA")
+        Box(modifier = Modifier.fillMaxWidth().background(LightBlue, RoundedCornerShape(28.dp)).padding(22.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Fora do contexto\nescolar", color = Navy, fontSize = 32.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold)
+                Text("O teu smartphone está totalmente disponível.", color = Muted, fontSize = 18.sp, lineHeight = 25.sp)
+                Box(modifier = Modifier.background(Color(0xFFDDF7EC), RoundedCornerShape(24.dp)).padding(horizontal = 14.dp, vertical = 9.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(modifier = Modifier.size(9.dp).background(Color(0xFF18B77A), CircleShape))
+                        Text("Sem Capsule activa", color = Navy, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
+        FeatureCard(Icons.Outlined.Eco, "autonomia", "Sem Capsule. Sem restrições.") {
+            Text("Podes usar todas as aplicações livremente. O Morph volta a observar apenas o contexto pedagógico.", color = Navy, fontSize = 16.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+        }
     }
 }
 
@@ -304,7 +329,7 @@ private fun MorphTransformationSplash(selected: SplashMode, onFinished: () -> Un
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
-            Image(painter = painterResource(R.drawable.morph_logo), contentDescription = "Morph", modifier = Modifier.width(148.dp).height(54.dp))
+            Image(painter = painterResource(R.drawable.morph_logo_horizontal), contentDescription = "Morph", modifier = Modifier.width(148.dp).height(41.dp))
             Text("AULA AO VIVO", color = PrimaryBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
         }
 
@@ -392,19 +417,103 @@ private fun MorphTransformationSplash(selected: SplashMode, onFinished: () -> Un
 }
 
 @Composable
-private fun BrandHeader() {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+private fun StudentTopBar() {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Image(
-            painter = painterResource(id = R.drawable.morph_logo),
+            painter = painterResource(id = R.drawable.morph_logo_horizontal),
             contentDescription = "Morph",
-            modifier = Modifier.width(154.dp).height(58.dp)
+            modifier = Modifier.width(132.dp).height(36.dp)
         )
         Spacer(Modifier.weight(1f))
-        Column(horizontalAlignment = Alignment.End) {
-            Text("HACKTUDO 2026", color = Navy, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-            Spacer(Modifier.height(10.dp))
-            Box(modifier = Modifier.width(32.dp).height(3.dp).background(PrimaryBlue))
+        Icon(Icons.Outlined.NotificationsNone, contentDescription = "Notificações", tint = Navy, modifier = Modifier.size(25.dp))
+        Spacer(Modifier.width(14.dp))
+        Box(
+            modifier = Modifier.size(36.dp).background(LightBlue, CircleShape).border(1.dp, BorderBlue, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Outlined.PersonOutline, contentDescription = "Perfil", tint = PrimaryBlue, modifier = Modifier.size(21.dp))
         }
+    }
+}
+
+@Composable
+private fun SchoolContextPill() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 4.dp)
+            .background(LightBlue, RoundedCornerShape(18.dp))
+            .border(1.dp, BorderBlue, RoundedCornerShape(18.dp))
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(11.dp)
+    ) {
+        Icon(Icons.Outlined.School, contentDescription = null, tint = Navy, modifier = Modifier.size(23.dp))
+        Text("Escola Secundária do Porto", color = Navy, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.weight(1f))
+        Text("›", color = Muted, fontSize = 27.sp, fontWeight = FontWeight.Light)
+    }
+}
+
+@Composable
+private fun StudentBottomNav() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, BorderBlue)
+            .navigationBarsPadding()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        StudentNavItem(Icons.Outlined.Home, "Início", selected = true)
+        StudentNavItem(Icons.Outlined.MenuBook, "Cápsulas")
+        StudentNavItem(Icons.Outlined.BarChart, "Progresso")
+        StudentNavItem(Icons.Outlined.PersonOutline, "Perfil")
+    }
+}
+
+@Composable
+private fun StudentNavItem(icon: ImageVector, label: String, selected: Boolean = false) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Icon(icon, contentDescription = label, tint = if (selected) PrimaryBlue else Muted, modifier = Modifier.size(22.dp))
+        Text(label, color = if (selected) PrimaryBlue else Muted, fontSize = 10.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+    }
+}
+
+@Composable
+private fun CapsuleHeader(active: PhaseType) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Eyebrow("CÁPSULA")
+        Text("Movimento Acelerado", color = Navy, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        Text("Explorar o movimento no mundo real", color = Muted, fontSize = 15.sp)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            listOf(
+                PhaseType.UNDERSTAND to ("Compreender" to Icons.Outlined.MenuBook),
+                PhaseType.MEASURE to ("Medir" to Icons.Outlined.BarChart),
+                PhaseType.ANALYSE to ("Analisar" to Icons.Outlined.Insights),
+                PhaseType.REFLECT to ("Reflectir" to Icons.Outlined.EditNote)
+            ).forEach { (type, item) ->
+                CapsulePhaseItem(item.first, item.second, selected = active == type)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CapsulePhaseItem(label: String, icon: ImageVector, selected: Boolean) {
+    Column(
+        modifier = Modifier
+            .background(if (selected) LightBlue else Color.Transparent, RoundedCornerShape(14.dp))
+            .padding(horizontal = 8.dp, vertical = 7.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(icon, contentDescription = label, tint = if (selected) PrimaryBlue else Navy, modifier = Modifier.size(25.dp))
+        Text(label, color = if (selected) PrimaryBlue else Muted, fontSize = 11.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+        if (selected) Box(modifier = Modifier.width(32.dp).height(3.dp).background(PrimaryBlue, RoundedCornerShape(2.dp)))
     }
 }
 
@@ -500,15 +609,33 @@ private fun WelcomeState(status: String) {
 
 @Composable
 private fun UnderstandState(title: String) {
+    var hypothesis by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Eyebrow("CAPSULE · 01 / 04")
-        Text("Compreender", color = Navy, fontSize = 34.sp, fontWeight = FontWeight.Bold)
-        Text("O telefone certo para cada momento da aula.", color = Muted, fontSize = 18.sp, lineHeight = 25.sp)
+        Text(title, color = Navy, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+        Text("Contextualizar o fenómeno e activar conhecimentos prévios.", color = Muted, fontSize = 18.sp, lineHeight = 25.sp)
         BlueRule()
-        FeatureCard(Icons.Outlined.MenuBook, "aprender", "Conteúdos no momento certo.") {
-            Text(title, color = Navy, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        FeatureCard(Icons.Outlined.MenuBook, "ETAPA 01 · COMPREENDER", "Conteúdos no momento certo.") {
+            Text("O que acontece quando um corpo acelera?", color = Navy, fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
-            Text("Explora o fenómeno no contexto real e regista a tua hipótese antes de medir.", color = Muted, fontSize = 15.sp, lineHeight = 21.sp)
+            Text("Um corpo acelera quando a sua velocidade varia ao longo do tempo — quando fica mais rápido ou mais lento.", color = Muted, fontSize = 15.sp, lineHeight = 21.sp)
+            Spacer(Modifier.height(6.dp))
+            Box(modifier = Modifier.fillMaxWidth().background(LightBlue, RoundedCornerShape(18.dp)).padding(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Pontos-chave", color = Navy, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Text("1   A aceleração é a variação da velocidade no tempo.", color = Muted, fontSize = 14.sp, lineHeight = 19.sp)
+                    Text("2   Pode ser positiva ou negativa.", color = Muted, fontSize = 14.sp, lineHeight = 19.sp)
+                    Text("3   A unidade SI é o metro por segundo quadrado (m/s²).", color = Muted, fontSize = 14.sp, lineHeight = 19.sp)
+                }
+            }
+            OutlinedTextField(
+                value = hypothesis,
+                onValueChange = { hypothesis = it },
+                label = { Text("Qual é a tua hipótese?") },
+                placeholder = { Text("Escreve aqui a tua ideia…") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2
+            )
         }
         PhaseProgress(active = 0)
     }
@@ -605,15 +732,29 @@ private fun ReflectState(capsuleId: String?, store: ReflectionStore) {
 @Composable
 private fun BreakState(onFinish: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Eyebrow("MORPH · INTERVALO")
-        Text("O telefone\nvoltou a ser teu.", color = Navy, fontSize = 33.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold)
-        Text("A Capsule terminou e todas as restrições pedagógicas foram removidas. Próxima aula: 10:15.", color = Muted, fontSize = 17.sp, lineHeight = 24.sp)
-        BlueRule()
-        FeatureCard(Icons.Outlined.Eco, "autonomia", "Sem política activa.") {
-            Text("Usa normalmente ou guarda o telefone por alguns minutos. A escolha é tua.", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Eyebrow("AULA TERMINADA")
+        Text("Intervalo", color = Navy, fontSize = 48.sp, lineHeight = 52.sp, fontWeight = FontWeight.Bold)
+        Text("O telefone voltou a ser teu.", color = Muted, fontSize = 22.sp, lineHeight = 28.sp)
+        Text("Aproveita este tempo para fazer o que te faz bem — conversa, relaxa, explora, move-te.", color = Muted, fontSize = 17.sp, lineHeight = 24.sp)
+        Box(modifier = Modifier.fillMaxWidth().border(1.dp, BorderBlue, RoundedCornerShape(22.dp)).padding(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(modifier = Modifier.size(46.dp).background(LightBlue, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(25.dp))
+                }
+                Column {
+                    Eyebrow("PRÓXIMA AULA")
+                    Text("Matemática", color = Navy, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("10:15 · Sala B3", color = Muted, fontSize = 15.sp)
+                }
+            }
         }
-        Button(onClick = onFinish, colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) {
-            Text("Usar normalmente", fontWeight = FontWeight.Bold)
+        Button(onClick = onFinish, colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(28.dp), modifier = Modifier.fillMaxWidth().height(58.dp)) {
+            Icon(Icons.Outlined.Schedule, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Guardar o telefone por 10 min", fontWeight = FontWeight.Bold)
+        }
+        TextButton(onClick = onFinish, modifier = Modifier.fillMaxWidth()) {
+            Text("Usar normalmente", color = PrimaryBlue, fontWeight = FontWeight.Bold)
         }
     }
 }

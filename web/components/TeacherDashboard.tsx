@@ -120,7 +120,7 @@ async function postJson(path: string, body?: unknown): Promise<ApiResponse> {
 function AndroidAnalysisPreview() {
   return <div className="android-analysis-screen" aria-label="Pré-visualização nativa Android da fase Analisar">
     <div className="android-analysis-status"><span>11:52</span><span>5G&nbsp; ◢&nbsp; ▣</span></div>
-    <Image className="android-analysis-brand" src="/brand/morph-lockup.jpg" alt="morph" width={160} height={60} />
+    <Image className="android-analysis-brand" src="/brand/logo-lockup-horizontal.png" alt="morph" width={160} height={60} />
     <div className="android-analysis-runtime"><span>● EM AULA</span><i>·</i><span>● ONLINE</span></div>
     <div className="android-analysis-permission">⚙&nbsp; Abrir permissões de protecção</div>
     <span className="android-analysis-kicker">CAPSULE · 03 / 04</span>
