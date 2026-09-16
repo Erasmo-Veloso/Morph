@@ -148,6 +148,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const [intent, setIntent] = useState(defaultIntent);
   const [capsule, setCapsule] = useState(() => withApprovedApps(initialCapsule));
   const [session, setSession] = useState<LessonSession | null>(null);
+  const [hasStartedSession, setHasStartedSession] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [view, setView] = useState<"intent" | "configure" | "present">("intent");
   const [selectedPhaseId, setSelectedPhaseId] = useState<PhaseId>("UNDERSTAND");
@@ -176,16 +177,18 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
     if (runtimeStatus.session.running) {
       // The bridge is authoritative after a reload. Restore the live view
       // instead of leaving the teacher on the initial intent screen.
+      setHasStartedSession(true);
       if (!session) setView("present");
       return;
     }
-    if (!session || session.status !== "RUNNING") {
+    if (hasStartedSession || session?.status === "RUNNING") {
       setSession(null);
+      setHasStartedSession(false);
       setView("intent");
       setSelectedPhaseId("UNDERSTAND");
       setIsPreviewOpen(false);
     }
-  }, [runtimeStatus, session]);
+  }, [hasStartedSession, runtimeStatus, session]);
 
   useEffect(() => {
     void fetch("/api/school", { cache: "no-store" })
@@ -267,7 +270,8 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   }
 
   async function startSimulation() {
-    await runAction(() => postJson("/api/session/start"));
+    const result = await runAction(() => postJson("/api/session/start"));
+    if (result?.session) setHasStartedSession(true);
   }
 
   async function advanceSimulation() {
@@ -275,6 +279,7 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
       const result = await runAction(() => postJson("/api/session/end"));
       if (!result) return;
       setSession(null);
+      setHasStartedSession(false);
       setView("intent");
       setSelectedPhaseId("UNDERSTAND");
       setIsPreviewOpen(false);
