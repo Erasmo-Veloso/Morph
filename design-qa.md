@@ -18,6 +18,8 @@
 - Android Compreender state: `/tmp/morph-android-understand-final-2.png` — 1080 × 2400 px, live bridge session, post-splash capture.
 - Android Medir/Analisar/Reflectir states: `/tmp/morph-android-measure-latest.png`, `/tmp/morph-android-analyse-latest.png`, `/tmp/morph-android-reflect-latest.png` — 1080 × 2400 px, live bridge phase transitions.
 - Android Intervalo state: `/tmp/morph-android-break-latest.png` — 1080 × 2400 px, live bridge end-session transition.
+- Android Fora da escola state: `/tmp/morph-android-outside-latest.png` — 1080 × 2400 px, live bridge context transition.
+- Android Shield state: `/tmp/morph-android-shield-latest-3.png` — 1080 × 2400 px, restricted YouTube launch under an active UNDERSTAND policy.
 - Density normalization: screenshots were compared at their native pixel dimensions; no device frame was used for the desktop comparison. Android captures were taken at the emulator's native 1080 × 2400 px surface and compared with the 941 × 1672 px mobile references by layout hierarchy and responsive density, not as a pixel-for-pixel desktop match.
 
 ## State and interactions tested
@@ -50,6 +52,7 @@
 3. Re-captured `/tmp/morph-teacher-latest.png` and `/tmp/morph-school-latest.png`; shared shell, logo treatment and profile affordance have no actionable P0/P1/P2 mismatch.
 4. Rebuilt and installed Android, then captured the post-splash shell and every bridge-driven pedagogical phase; the mobile hierarchy, logo, navigation and phase surfaces have no actionable P0/P1/P2 mismatch.
 5. Replaced stale web Android preview captures with post-splash runtime captures and added a dedicated Reflectir capture, keeping the web preview consistent with the installed APK.
+6. Captured the OUTSIDE_SCHOOL context and a real restricted-app Shield response; both retain the corrected official logo and the intended policy/autonomy distinction.
 
 ## Final result
 
