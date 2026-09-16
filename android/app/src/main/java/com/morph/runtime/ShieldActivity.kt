@@ -69,9 +69,9 @@ private fun ShieldScreen(phase: PhaseType?, allowedTools: String, onReturnToLess
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Image(
-            painter = painterResource(id = R.drawable.morph_logo_horizontal),
+            painter = painterResource(id = R.drawable.morph_logo),
             contentDescription = "Morph",
-            modifier = Modifier.align(Alignment.Start).width(142.dp).height(39.dp)
+            modifier = Modifier.align(Alignment.Start).width(154.dp).height(58.dp)
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("MORPH SHIELD", color = PrimaryBlue, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)

@@ -50,7 +50,7 @@ export function MorphLanding() {
     <main className="landing-shell">
       <header className="landing-nav">
         <Link href="/" className="landing-brand" aria-label="Morph, página inicial">
-          <Image src="/brand/logo-lockup-horizontal.png" alt="morph · aulas que transformam" width={198} height={56} priority />
+          <Image src="/brand/morph-lockup.jpg" alt="morph · aulas que transformam" width={198} height={56} priority />
         </Link>
         <nav aria-label="Navegação principal">
           <a href="#como-funciona">Como funciona</a>
@@ -159,7 +159,7 @@ export function MorphLanding() {
         </div>
       </section>
 
-      <footer className="landing-footer"><Image src="/brand/logo-lockup-horizontal.png" alt="morph" width={142} height={40} /><p>AULAS QUE TRANSFORMAM · HACKTUDO 2026</p><a href="#landing-title">Voltar ao início ↑</a></footer>
+      <footer className="landing-footer"><Image src="/brand/morph-lockup.jpg" alt="morph" width={142} height={40} /><p>AULAS QUE TRANSFORMAM · HACKTUDO 2026</p><a href="#landing-title">Voltar ao início ↑</a></footer>
     </main>
   );
 }
