@@ -10,16 +10,12 @@
 ## Implementation evidence
 
 - Create state: `/tmp/morph-teacher-reference-final.png` — 1440 × 1100 px, Chrome headless, CSS viewport 1440 × 1100, device scale factor 1.
-- Create state (latest): `/tmp/morph-teacher-create-v2.png` — 1448 × 1086 px, Chrome headless, CSS viewport 1448 × 1086, device scale factor 1.
 - Live state: `/tmp/morph-teacher-live-rendered.png` — 1440 × 1100 px, Chrome headless, CSS viewport 1440 × 1100, device scale factor 1.
-- Live state (latest): `/tmp/morph-teacher-live-rich-v3.png` — 1448 × 1086 px, Chrome headless, CSS viewport 1448 × 1086, device scale factor 1.
 - School state: `/tmp/morph-school-reference-final.png` — 1440 × 1100 px, Chrome headless, CSS viewport 1440 × 1100, device scale factor 1.
 - Android shell/idle state: `/tmp/morph-android-chrome-final-2.png` — 1080 × 2400 px, Android emulator `emulator-5554`, post-splash capture.
 - Android Compreender state: `/tmp/morph-android-understand-final-2.png` — 1080 × 2400 px, live bridge session, post-splash capture.
 - Android Medir/Analisar/Reflectir states: `/tmp/morph-android-measure-latest.png`, `/tmp/morph-android-analyse-latest.png`, `/tmp/morph-android-reflect-latest.png` — 1080 × 2400 px, live bridge phase transitions.
 - Android Intervalo state: `/tmp/morph-android-break-latest.png` — 1080 × 2400 px, live bridge end-session transition.
-- Android Fora da escola state: `/tmp/morph-android-outside-latest.png` — 1080 × 2400 px, live bridge context transition.
-- Android Shield state: `/tmp/morph-android-shield-latest-3.png` — 1080 × 2400 px, restricted YouTube launch under an active UNDERSTAND policy.
 - Density normalization: screenshots were compared at their native pixel dimensions; no device frame was used for the desktop comparison. Android captures were taken at the emulator's native 1080 × 2400 px surface and compared with the 941 × 1672 px mobile references by layout hierarchy and responsive density, not as a pixel-for-pixel desktop match.
 
 ## State and interactions tested
@@ -27,7 +23,6 @@
 - `/teacher` create state with editable lesson intent and working “Gerar Cápsula” action.
 - `/teacher` create → configure → preview → live flow was exercised through the browser; runtime polling now preserves configure/preview states and only returns to create after a real session end.
 - `/teacher` live state after starting the bridge session; Android reported online and the live phase view was restored after reload.
-- `/teacher` live state now exposes the reference hierarchy: Capsule title/meta, four-phase rail, active-stage instructions, Android preview, class roster and Sentinel events.
 - `/school` shell and School Bubble configuration rendered without layout regressions.
 - Teacher navigation, primary action styles, responsive sidebar collapse and mobile bottom navigation were checked.
 - Android was rebuilt, installed and exercised against the live bridge through `UNDERSTAND → MEASURE → ANALYSE → REFLECT → FINISHED`; the real sensor card, phase rail, school context, logo, profile/bell chrome and bottom navigation rendered after the splash.
@@ -52,8 +47,6 @@
 2. Fixed by adding explicit final-precedence grid areas for heading, Capsule summary, composer and live preview.
 3. Re-captured `/tmp/morph-teacher-latest.png` and `/tmp/morph-school-latest.png`; shared shell, logo treatment and profile affordance have no actionable P0/P1/P2 mismatch.
 4. Rebuilt and installed Android, then captured the post-splash shell and every bridge-driven pedagogical phase; the mobile hierarchy, logo, navigation and phase surfaces have no actionable P0/P1/P2 mismatch.
-5. Replaced stale web Android preview captures with post-splash runtime captures and added a dedicated Reflectir capture, keeping the web preview consistent with the installed APK.
-6. Captured the OUTSIDE_SCHOOL context and a real restricted-app Shield response; both retain the corrected official logo and the intended policy/autonomy distinction.
 
 ## Final result
 
