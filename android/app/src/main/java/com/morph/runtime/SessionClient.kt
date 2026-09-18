@@ -123,6 +123,7 @@ class SessionClient(
                 }
                 "session:started" -> {
                     engine.start()
+                    if (engine.state.value.running) PolicyAccessibilityService.bringMorphToForeground()
                     sendDeviceStatus()
                 }
                 "phase:changed" -> { engine.transitionTo(PhaseType.valueOf(message.getJSONObject("phase").getString("id"))); sendDeviceStatus() }

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type ComponentType } from "react"
 import gsap from "gsap";
 import {
   Activity,
+  AppWindow,
   ArrowRight,
   BookOpen,
   Calculator,
@@ -15,8 +16,10 @@ import {
   Clock3,
   Compass,
   Eye,
-  FileCode2,
+  FolderOpen,
   Gauge,
+  Globe,
+  GraduationCap,
   LoaderCircle,
   MoreVertical,
   Monitor,
@@ -25,6 +28,7 @@ import {
   ShieldCheck,
   Sparkles,
   Timer,
+  Triangle,
   Users,
   X
 } from "lucide-react";
@@ -108,6 +112,24 @@ const configurableCapabilities: Record<PhaseId, Capability[]> = {
   ANALYSE: ["COLLECTED_DATA", "GRAPH", "CALCULATOR"],
   REFLECT: ["EXIT_TICKET"]
 };
+
+const appIconMeta: Record<string, { icon: ComponentType<{ size?: number; strokeWidth?: number }>; tone: string; asset?: string }> = {
+  calculator: { icon: Calculator, tone: "calculator", asset: "/assets/apps/calculator.png" },
+  "samsung-notes": { icon: NotebookPen, tone: "notes", asset: "/assets/apps/samsung-notes.png" },
+  chrome: { icon: Globe, tone: "chrome", asset: "/assets/apps/chrome.png" },
+  camera: { icon: Camera, tone: "camera", asset: "/assets/apps/camera.png" },
+  files: { icon: FolderOpen, tone: "files", asset: "/assets/apps/files.jpg" },
+  classroom: { icon: GraduationCap, tone: "classroom", asset: "/assets/apps/classroom.png" },
+  drive: { icon: Triangle, tone: "drive", asset: "/assets/apps/drive.png" }
+};
+
+function AppIcon({ app }: { app: ApprovedApp }) {
+  const meta = appIconMeta[app.id] ?? { icon: AppWindow, tone: "custom" };
+  const Icon = meta.icon;
+  return <span className={`app-icon app-icon-${meta.tone}`} aria-hidden="true">
+    {meta.asset ? <Image src={meta.asset} alt="" width={30} height={30} /> : <Icon size={15} strokeWidth={2.3} />}
+  </span>;
+}
 
 type ApiResponse = { session?: LessonSession; source?: "groq" | "fallback"; draft?: LessonDraft } & Partial<CompileResult>;
 
@@ -223,17 +245,8 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   const runtimeEvents = runtimeStatus?.events.slice().reverse() ?? [];
   const latestRuntimeEvent = runtimeEvents.find((event) => priorityRuntimeEventTypes.has(event.type))
     ?? runtimeEvents[0];
-  const enrollment = runtimeStatus?.enrollment;
   const demoTeacher = school?.teachers.find((teacher) => teacher.id === "teacher-demo") ?? school?.teachers[0];
   const isSessionActive = runtimeStatus ? runtimeStatus.session.running : Boolean(session);
-  const runtimeStage = runtimeDevice?.phase
-    ?? (runtimeDevice?.authority === "BREAK"
-      ? "BREAK"
-      : runtimeStatus?.session.schoolContext === "OUTSIDE_SCHOOL"
-        ? "PASSIVE"
-        : runtimeStatus?.session.running
-          ? runtimeStatus.session.phase
-          : "SCHOOL_IDLE");
 
   useEffect(() => {
     const root = presentationRef.current;
@@ -337,9 +350,6 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
   }
 
   const isRuntimeConnected = Boolean(runtimeDevice);
-  const liveStudents = (school?.students ?? [])
-    .filter((student) => student.className === demoTeacher?.className)
-    .slice(0, 8);
   const activePhaseMinutes = Math.max(1, Math.round(presentationPhase.duration / 60));
   const phaseInstruction = presentationPhase.learning_assets[0]?.activity
     ?? (presentationPhase.id === "REFLECT"
@@ -348,22 +358,21 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
 
   return (
     <StudioShell active="capsules" status={runtimeDevice ? `Android · ${runtimeDevice.connectivity}` : "Aguardando Android"}>
-      <section className="presentation" id="presentation" ref={presentationRef}>
+      <section className={`presentation${view === "intent" ? " teacher-intent-presentation" : view === "configure" ? " teacher-configure-presentation" : view === "present" ? ` teacher-capsule-detail-presentation${!isSessionActive ? " teacher-preview-presentation" : ""}` : ""}`} id="presentation" ref={presentationRef}>
         {view === "intent" ? (
-          <section className="intent-stage" aria-labelledby="intent-title">
+          <section className="intent-stage teacher-intent-stage" aria-labelledby="intent-title">
             <div className="stage-copy" data-enter>
               <StudioSectionLabel>Passo 01</StudioSectionLabel>
               <h1 id="intent-title">Criar a Cápsula</h1>
               <p>Descreva a sua aula e o Morph organiza-a automaticamente numa sequência didáctica pronta a usar.</p>
             </div>
             <div className="capsule-summary" data-enter aria-label="Resumo da nova Cápsula">
-              <Image src="/assets/android/understand.png" alt="Pré-visualização da Cápsula" width={92} height={62} />
-              <div><span>Nova Cápsula</span><strong>{capsule.title ?? "Nova Cápsula"}</strong><small>{capsule.subject ?? "Aula interdisciplinar"}</small></div>
-              <div><span>Turma</span><strong>10.º B</strong></div><div><span>Duração total</span><strong>30 min</strong></div><div><span>Estado</span><b>Rascunho</b></div>
+              <div className="capsule-context"><span>Contexto da aula</span><strong>10.º B · Física</strong><small>30 min · Rascunho</small></div>
+              <div className="capsule-topic"><span>Tema da Capsule</span><strong>{capsule.title ?? "Nova Cápsula"}</strong><small>{capsule.subject ?? "Aula interdisciplinar"}</small></div>
             </div>
             <div className="intent-composer" data-enter>
-              <div className="composer-heading"><div><span className="composer-kicker">O que pretende explorar?</span><strong>Escreva de forma simples e natural.</strong></div><span className="composer-index">01</span></div>
-              <p className="composer-description">Descreva o tema, os objectivos, o tipo de actividades ou qualquer ideia.</p>
+              <div className="composer-heading"><div><span className="composer-kicker">Confirmar o tema</span><strong>O que a turma vai explorar?</strong></div><span className="composer-index">01</span></div>
+              <p className="composer-description">Escreva o tema, os objectivos ou as actividades. O Morph organiza a sequência pedagógica.</p>
               <label htmlFor="lesson-intent">Descrição da aula</label>
               <textarea
                 id="lesson-intent"
@@ -392,16 +401,6 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
                 </div>
               </div>
             </div>
-            <aside className="intent-device" aria-label="Ecrãs reais do Android" data-enter>
-              <div className="intent-device-copy">
-                <span className="stage-eyebrow">Aula ao vivo <span /></span>
-                <h2>A mesma aula.<br /><em>Três funções.</em></h2>
-                <p>O telefone começa por ensinar, protege o foco e depois mede o fenómeno.</p>
-              </div>
-              <div className="intent-device-sequence">
-                <video className="intent-motion-video" src="/media/morph-transformation.mp4" poster={phaseAssets.UNDERSTAND} autoPlay muted loop playsInline preload="metadata" aria-label="Demonstração da metamorfose do smartphone entre Compreender, Shield e Medir" />
-              </div>
-            </aside>
           </section>
         ) : view === "configure" ? (
           <section className="configuration-stage" aria-labelledby="configuration-title">
@@ -440,13 +439,13 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
                     {(appRecommendations[selectedPhase.id] ?? []).map((recommendation) => {
                       const app = appCatalog.find((item) => item.id === recommendation.id);
                       if (!app) return null;
-                      return <div className="app-suggestion" key={recommendation.id}><div><strong>{app.name}</strong><small>{recommendation.reason}</small></div><span>Sugerida</span></div>;
+                      return <div className="app-suggestion" key={recommendation.id}><AppIcon app={app} /><div><strong>{app.name}</strong><small>{recommendation.reason}</small></div><span>Sugerida</span></div>;
                     })}
                   </div> : <p className="catalog-empty">A IA não encontrou uma aplicação necessária para esta etapa. A decisão continua a ser do professor.</p>}
                   {appCatalog.length > 0 ? <div className="application-list app-catalog-list">
                     {appCatalog.map((app) => <label className="application-option" key={app.id}>
                       <input type="checkbox" checked={selectedPhase.allowed_apps.some((item) => item.id === app.id)} onChange={() => toggleAllowedApp(app)} />
-                      <span className="application-check"><Check size={13} /></span><FileCode2 size={17} /><span><strong>{app.name}</strong><small>{app.category}</small></span>
+                      <span className="application-check"><Check size={13} /></span><AppIcon app={app} /><span><strong>{app.name}</strong><small>{app.category}</small></span>
                     </label>)}
                   </div> : <p className="catalog-empty">O catálogo da escola ainda está a carregar.</p>}
                 </div>
@@ -504,19 +503,11 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
               </aside>
             </div>
 
-            <div className="live-lower-grid" data-enter>
-              <section className="live-students-panel" aria-label="Alunos da sessão">
-                <div className="live-panel-heading"><span>Alunos ({demoTeacher?.studentIds.length ?? 0})</span><span className="live-tabs"><b>Em aula ({Math.max(0, (demoTeacher?.studentIds.length ?? 0) - 2)})</b><span>Local (2)</span><span>Com alertas (1)</span></span></div>
-                <div className="live-student-grid">
-                  {liveStudents.map((student, index) => <div className="live-student" key={student.id}><span className={`student-dot ${index === 2 ? "warning" : ""}`} /><div><strong>{student.name}</strong><small>Última actividade há {index + 1} min</small></div><span className={index === 1 ? "student-status local" : "student-status"}>{index === 1 ? "Local" : "Em aula"}</span></div>)}
-                </div>
-              </section>
-              <aside className="sentinel-panel" aria-label="Sentinel">
-                <div className="live-panel-heading"><span><ShieldCheck size={21} /> Sentinel</span><b className="sentinel-ok"><i /> Tudo está bem</b></div>
-                <p>Acompanhamento em tempo real</p>
-                {(runtimeEvents.length > 0 ? runtimeEvents.slice(0, 3) : [{ id: "session", type: "SESSION", payload: "A sessão está pronta", occurredAt: Date.now(), receivedAt: Date.now(), phaseId: presentationPhase.id }]).map((event) => <div className="sentinel-event" key={event.id}><span>●</span><div><strong>{runtimeEventLabel[event.type] ?? "Sessão actualizada"}</strong><small>{event.payload}</small></div></div>)}
-              </aside>
-            </div>
+            {isSessionActive ? <div className="live-session-signals" data-enter aria-label="Estado essencial da sessão">
+              <span><Users size={15} /> {demoTeacher?.studentIds.length ?? 0} alunos em aula</span>
+              <span><Monitor size={15} /> Android · {runtimeDevice?.connectivity ?? "A LIGAR"}</span>
+              <span><ShieldCheck size={15} /> Sentinel · {latestRuntimeEvent ? (runtimeEventLabel[latestRuntimeEvent.type] ?? latestRuntimeEvent.type) : "ÍNTEGRO"}</span>
+            </div> : null}
 
             <div className="stage-action" data-enter>
               {!isSessionActive ? (
@@ -531,16 +522,6 @@ export function TeacherDashboard({ initialCapsule }: { initialCapsule: LearningC
               )}
               <span>{!session ? "A Cápsula está pronta para ser enviada ao dispositivo." : "O dispositivo atualiza-se imediatamente."}</span>
             </div>
-            {session ? <section className="runtime-live" aria-label="Estado real do Android" data-enter>
-              <div><span>Turma</span><strong>{demoTeacher ? `${demoTeacher.className} · ${demoTeacher.studentIds.length} alunos` : "A CARREGAR"}</strong></div>
-              <div><span>Aluno · turma</span><strong>{enrollment ? `${enrollment.studentName} · ${enrollment.classId}` : "A CONFIRMAR"}</strong></div>
-              <div><span>Dispositivo</span><strong>{enrollment?.state === "PAIRED" ? (enrollment.deviceName ?? "ASSOCIADO") : "AGUARDA CÓDIGO"}</strong></div>
-              <div><span>Android</span><strong>{runtimeStage}</strong></div>
-              <div><span>Conectividade</span><strong>{runtimeDevice?.connectivity ?? "SEM DISPOSITIVO"}</strong></div>
-              <div><span>Contexto escolar</span><strong>{runtimeDevice?.schoolContext ?? "A CONFIRMAR DISPOSITIVO"}</strong></div>
-              <div><span>Sentinel</span><strong>{latestRuntimeEvent ? (runtimeEventLabel[latestRuntimeEvent.type] ?? latestRuntimeEvent.type) : "SEM EVENTOS"}</strong></div>
-              <div className="runtime-context-actions"><span>Rehearsal de contexto</span><p><button type="button" disabled={isBusy} onClick={() => void updateSchoolContext("context:unverified")}>Contexto não verificado</button><button type="button" disabled={isBusy} onClick={() => void updateSchoolContext("context:outside")}>Saída da escola</button><button type="button" disabled={isBusy} onClick={() => void updateSchoolContext("context:verified")}>Contexto verificado</button></p></div>
-            </section> : null}
             {errorMessage ? <p className="action-error" role="alert">{errorMessage}</p> : null}
           </section>
         )}

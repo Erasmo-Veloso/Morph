@@ -117,6 +117,18 @@ function pairDevice(candidate = {}) {
     deviceName: String(candidate.deviceName || "Android Morph"),
     state: "PAIRED"
   };
+  const existingDeviceStatus = deviceStatuses.get(enrollment.studentId);
+  if (existingDeviceStatus) {
+    const status = {
+      ...existingDeviceStatus,
+      deviceId: enrollment.deviceId,
+      deviceName: enrollment.deviceName,
+      enrollment: enrollment.state,
+      receivedAt: Date.now()
+    };
+    deviceStatuses.set(enrollment.studentId, status);
+    broadcast({ type: "device:status", status });
+  }
   void persistSessionState();
   broadcast(enrollmentMessage());
   broadcast(schoolContextMessage());

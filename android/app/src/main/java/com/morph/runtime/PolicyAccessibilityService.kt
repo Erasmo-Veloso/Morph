@@ -1,6 +1,7 @@
 package com.morph.runtime
 
 import android.accessibilityservice.AccessibilityService
+import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
@@ -13,6 +14,20 @@ class PolicyAccessibilityService : AccessibilityService() {
     private var lastPackage: String? = null
     private var lastAttemptAt = 0L
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        activeService = this
+    }
+
+    override fun onDestroy() {
+        if (activeService === this) activeService = null
+        super.onDestroy()
+    }
+
+    private fun bringMorphToForeground() {
+        startActivity(lessonIntent(this))
+    }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val packageName = event?.packageName?.toString() ?: return
@@ -43,6 +58,27 @@ class PolicyAccessibilityService : AccessibilityService() {
     override fun onInterrupt() = Unit
 
     companion object {
+        @Volatile
+        private var activeService: PolicyAccessibilityService? = null
+
+        /**
+         * A lesson start is an explicit teacher action. When Shield is enabled,
+         * its accessibility service may reliably bring the student back to Morph
+         * even if another app currently owns the foreground.
+         */
+        fun bringMorphToForeground() {
+            val service = activeService
+            if (service != null) {
+                service.bringMorphToForeground()
+            } else {
+                MorphApplication.instance.startActivity(lessonIntent(MorphApplication.instance))
+            }
+        }
+
+        private fun lessonIntent(context: Context) = Intent(context, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+
         // These are Android UI surfaces, not student applications. The launcher
         // is neutral: pupils may see it, but every app opened from it is still
         // checked against the phase allowlist. Settings remains restricted.

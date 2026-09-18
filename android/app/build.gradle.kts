@@ -8,7 +8,9 @@ plugins {
 android {
     namespace = "com.morph.runtime"
     compileSdk = 36
-    val morphServerUrl = providers.gradleProperty("morph.serverUrl").orElse("ws://10.0.2.2:8787/realtime").get()
+    // The pitch runs on a physical device through `adb reverse tcp:8787 tcp:8787`.
+    // 10.0.2.2 is only reachable from the Android emulator.
+    val morphServerUrl = providers.gradleProperty("morph.serverUrl").orElse("ws://127.0.0.1:8787/realtime").get()
 
     defaultConfig {
         applicationId = "com.morph.runtime"
